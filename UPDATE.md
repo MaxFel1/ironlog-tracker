@@ -38,6 +38,3 @@ Auch wenn Updates die Daten normalerweise nicht löschen – sicher ist sicher:
 
 1. Altes Handy: **Export (JSON)** → Datei z.B. per Mail/Cloud auf neues Handy
 2. Neues Handy: App-URL öffnen → installieren → **Import (JSON)** → Datei laden
-
----
-IRON.LOG · Besitzer: Markus F.

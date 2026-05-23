@@ -116,6 +116,3 @@ Regeln:
 Deine Trainings-Historie bleibt dabei immer erhalten. Du kannst beliebig viele Pläne
 speichern und zwischen ihnen wechseln. Den Standard-Plan kannst du nicht löschen
 (als Sicherheitsnetz), alle importierten schon.
-
----
-IRON.LOG · Besitzer: Markus F.
