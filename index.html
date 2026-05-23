@@ -767,7 +767,7 @@ input[type="range"]::-moz-range-thumb {
 
   <div class="stat-grid">
     <div class="stat">
-      <div class="stat-label">Gewicht</div>
+      <div class="stat-label">Körpergewicht</div>
       <div class="stat-value mono" id="statWeight">—<span class="stat-unit">kg</span></div>
       <div class="stat-delta" id="statWeightDelta">—</div>
     </div>
@@ -796,8 +796,8 @@ input[type="range"]::-moz-range-thumb {
     <button class="btn btn-secondary" onclick="navigateTo('nutrition')">🍽 Mahlzeit loggen</button>
   </div>
 
-  <div style="text-align:center; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); margin-top:8px; letter-spacing:0.05em;">
-    IRON.LOG · Besitzer: Markus F.
+  <div id="ownerLine" style="text-align:center; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); margin-top:8px; letter-spacing:0.05em;">
+    IRON.LOG
   </div>
 </section>
 
@@ -816,31 +816,31 @@ input[type="range"]::-moz-range-thumb {
 <!-- NUTRITION VIEW -->
 <section class="view" id="view-nutrition">
   <h1 class="view-title">ERNÄHRUNG</h1>
-  <p class="view-subtitle">3300 kcal · 170P / 80F / 475C</p>
+  <p class="view-subtitle" id="nutSubtitle">— kcal</p>
 
   <div class="macro-bar">
     <div class="macro">
       <div class="macro-label">kcal</div>
       <div class="macro-value" id="nutKcal">0</div>
-      <div class="macro-target">/ 3300</div>
+      <div class="macro-target" id="tgtKcal">/ —</div>
       <div class="progress-bar"><div class="progress-fill" id="progKcal" style="width:0%"></div></div>
     </div>
     <div class="macro">
       <div class="macro-label">Prot.</div>
       <div class="macro-value" id="nutProt">0</div>
-      <div class="macro-target">/ 170g</div>
+      <div class="macro-target" id="tgtProt">/ —</div>
       <div class="progress-bar"><div class="progress-fill" id="progProt" style="width:0%"></div></div>
     </div>
     <div class="macro">
       <div class="macro-label">Fett</div>
       <div class="macro-value" id="nutFat">0</div>
-      <div class="macro-target">/ 80g</div>
+      <div class="macro-target" id="tgtFat">/ —</div>
       <div class="progress-bar"><div class="progress-fill" id="progFat" style="width:0%"></div></div>
     </div>
     <div class="macro">
       <div class="macro-label">KH</div>
       <div class="macro-value" id="nutCarb">0</div>
-      <div class="macro-target">/ 475g</div>
+      <div class="macro-target" id="tgtCarb">/ —</div>
       <div class="progress-bar"><div class="progress-fill" id="progCarb" style="width:0%"></div></div>
     </div>
   </div>
@@ -848,12 +848,17 @@ input[type="range"]::-moz-range-thumb {
   <button class="btn" onclick="openFoodModal()">+ Lebensmittel hinzufügen</button>
   <div style="height:8px"></div>
   <button class="btn btn-secondary" onclick="startScan()">📷 Barcode scannen</button>
+  <div style="height:8px"></div>
+  <button class="btn btn-secondary" onclick="openGroupsModal()">📦 Mahlzeiten-Gruppen</button>
   <div style="height:14px"></div>
 
   <div class="card">
     <div class="card-header">
       <div class="card-title">Heute gegessen</div>
-      <button class="btn btn-small btn-ghost" onclick="clearTodayNutrition()">Reset</button>
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-small btn-ghost" onclick="saveTodayAsGroup()">Als Gruppe</button>
+        <button class="btn btn-small btn-ghost" onclick="clearTodayNutrition()">Reset</button>
+      </div>
     </div>
     <div id="todayFoodList"></div>
   </div>
@@ -869,12 +874,12 @@ input[type="range"]::-moz-range-thumb {
 
 <!-- WEIGHT VIEW -->
 <section class="view" id="view-weight">
-  <h1 class="view-title">GEWICHT</h1>
+  <h1 class="view-title">KÖRPERGEWICHT</h1>
   <p class="view-subtitle">Wöchentliches Tracking</p>
 
   <div class="card">
     <div class="input-group">
-      <label>Aktuelles Gewicht (kg)</label>
+      <label>Aktuelles Körpergewicht (kg)</label>
       <input type="number" step="0.1" id="weightInput" placeholder="z.B. 83.5" inputmode="decimal">
     </div>
     <button class="btn" onclick="addWeight()">+ Eintragen</button>
@@ -965,7 +970,7 @@ input[type="range"]::-moz-range-thumb {
   </button>
   <button class="nav-item" data-view="weight">
     <div class="nav-icon">⚖</div>
-    <div class="nav-label">Gewicht</div>
+    <div class="nav-label">Körper</div>
   </button>
   <button class="nav-item" data-view="progress">
     <div class="nav-icon">📊</div>
@@ -1042,32 +1047,110 @@ input[type="range"]::-moz-range-thumb {
   <div class="modal">
     <div class="modal-title">Einstellungen</div>
 
+    <div style="font-family:'Bebas Neue'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Profil</div>
     <div class="input-group">
-      <label>Signalton</label>
+      <label>Name</label>
+      <input type="text" id="pfName" placeholder="Dein Name">
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="input-group">
+        <label>Geschlecht</label>
+        <select id="pfSex"><option value="m">männlich</option><option value="f">weiblich</option></select>
+      </div>
+      <div class="input-group">
+        <label>Alter</label>
+        <input type="number" id="pfAge" inputmode="numeric" placeholder="37">
+      </div>
+      <div class="input-group">
+        <label>Größe (cm)</label>
+        <input type="number" id="pfHeight" inputmode="numeric" placeholder="183">
+      </div>
+      <div class="input-group">
+        <label>Gewicht (kg)</label>
+        <input type="number" id="pfWeight" step="0.1" inputmode="decimal" placeholder="84">
+      </div>
+    </div>
+    <div class="input-group">
+      <label>Aktivität</label>
+      <select id="pfActivity">
+        <option value="1.2">Sitzend (kaum Bewegung)</option>
+        <option value="1.375">Leicht aktiv (1-3×/Woche)</option>
+        <option value="1.55">Moderat (3-5×/Woche)</option>
+        <option value="1.6">Aktiv (4-5× Training)</option>
+        <option value="1.725">Sehr aktiv (6-7×/Woche)</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label>Ziel</label>
+      <select id="pfGoal">
+        <option value="500">Aufbau schnell (+500 kcal)</option>
+        <option value="300">Aufbau moderat (+300 kcal)</option>
+        <option value="400">Lean Bulk (+400 kcal)</option>
+        <option value="0">Halten (±0)</option>
+        <option value="-300">Diät leicht (−300 kcal)</option>
+        <option value="-500">Diät (−500 kcal)</option>
+      </select>
+    </div>
+    <button class="btn btn-small" onclick="saveProfile()" style="width:100%;">Profil & Makros speichern</button>
+    <div id="targetPreview" class="mono" style="font-size:11px; color:var(--text-dim); text-align:center; margin-top:8px;"></div>
+
+    <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
+    <div style="font-family:'Bebas Neue'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Trainingsplan</div>
+    <button class="btn btn-secondary btn-small" onclick="closeSettings(); openPlansModal();" style="width:100%;">Pläne verwalten / importieren</button>
+
+    <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
+    <div style="font-family:'Bebas Neue'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Signalton</div>
+    <div class="input-group">
       <div style="display:flex; align-items:center; gap:12px;">
         <input type="checkbox" id="setSound" onchange="updateSettings()" style="width:auto; transform:scale(1.4);">
         <span style="font-size:14px; color:var(--text-dim);">Ton bei Pausen-Ende abspielen</span>
       </div>
     </div>
-
     <div class="input-group">
       <label>Lautstärke: <span id="volLabel" class="mono">50%</span></label>
       <input type="range" id="setVolume" min="0" max="100" value="50" oninput="onVolumeInput()" onchange="updateSettings()" style="width:100%;">
     </div>
-
     <button class="btn btn-secondary btn-small" onclick="playBeep()" style="width:100%;">🔊 Ton testen</button>
 
-    <div style="height:20px"></div>
-    <div style="font-size:12px; color:var(--text-faint); line-height:1.5;">
-      Hinweis: Manche Android-Browser spielen Töne erst ab, nachdem du die Seite einmal berührt hast (Autoplay-Schutz).
-    </div>
     <div style="height:16px"></div>
     <div style="border-top:1px solid var(--border); padding-top:14px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim);">
-      Besitzer: <span style="color:var(--text);">Markus F.</span><br>
+      Besitzer: <span id="settingsOwner" style="color:var(--text);">—</span><br>
       IRON.LOG — Hypertrophy Tracker
     </div>
     <div style="height:16px"></div>
     <button class="btn" onclick="closeSettings()">Fertig</button>
+  </div>
+</div>
+
+<!-- MEAL GROUPS MODAL -->
+<div class="modal-bg" id="groupsModal">
+  <div class="modal">
+    <div class="modal-title">📦 Mahlzeiten-Gruppen</div>
+    <div style="font-size:13px; color:var(--text-dim); margin-bottom:14px;">
+      Tippe eine Gruppe an, um alle enthaltenen Lebensmittel auf einmal zu „heute" hinzuzufügen. Neue Gruppen erstellst du über „Als Gruppe" bei „Heute gegessen".
+    </div>
+    <div id="groupsList"></div>
+    <div style="height:12px"></div>
+    <button class="btn btn-secondary" onclick="closeGroupsModal()">Schließen</button>
+  </div>
+</div>
+
+<!-- PLANS MODAL -->
+<div class="modal-bg" id="plansModal">
+  <div class="modal">
+    <div class="modal-title">Trainingspläne</div>
+    <div id="plansList"></div>
+    <div style="height:12px"></div>
+    <button class="btn btn-secondary btn-small" onclick="document.getElementById('planImportFile').click()" style="width:100%;">⬆ Plan importieren (JSON)</button>
+    <input type="file" id="planImportFile" accept=".json" style="display:none" onchange="importPlan(event)">
+    <div style="height:8px"></div>
+    <button class="btn btn-secondary btn-small" onclick="exportActivePlan()" style="width:100%;">⬇ Aktiven Plan exportieren</button>
+    <div style="height:8px"></div>
+    <div style="font-size:11px; color:var(--text-faint); line-height:1.5;">
+      Tipp: Mit der Datei PLAN-FORMAT.md kann dir jede KI einen Plan im richtigen Format erzeugen, den du hier importierst.
+    </div>
+    <div style="height:14px"></div>
+    <button class="btn btn-secondary" onclick="closePlansModal()">Schließen</button>
   </div>
 </div>
 
@@ -1077,59 +1160,84 @@ input[type="range"]::-moz-range-thumb {
 /* =================================================================
    TRAINING PLAN — Upper/Lower 4-Day Hypertrophy
    ================================================================= */
-const TRAINING_PLAN = {
-  upperA: {
-    name: "Upper A — Push-Fokus",
-    code: "UA",
-    exercises: [
-      { id: "ua1", name: "Bankdrücken Langhantel", sets: 4, reps: "6-8", rpe: "8", rest: 180, cues: "Schulterblätter zusammen, Brust raus, Stange zu unterer Brust", alt: "Schrägbankdrücken LH" },
-      { id: "ua2", name: "Klimmzüge (oder Latzug breit)", sets: 4, reps: "6-10", rpe: "8", rest: 150, cues: "Voll ausstrecken unten, Brust zur Stange", alt: "Latzug breit" },
-      { id: "ua3", name: "Schulterdrücken Kurzhantel", sets: 3, reps: "8-10", rpe: "8", rest: 120, cues: "Sitzend, keine Hyperextension", alt: "Schulterdrücken Maschine" },
-      { id: "ua4", name: "Rudern T-Bar oder LH", sets: 3, reps: "8-10", rpe: "8", rest: 120, cues: "Ellenbogen nach hinten, Lat anspannen", alt: "Kabelrudern eng" },
-      { id: "ua5", name: "Seitheben Kurzhantel", sets: 3, reps: "12-15", rpe: "9", rest: 60, cues: "Leicht vorgeneigt, Ellenbogen führen", alt: "Seitheben Kabel" },
-      { id: "ua6", name: "Bizeps Curl LH + Trizeps Pushdown (Superset)", sets: 3, reps: "10-12", rpe: "9", rest: 90, cues: "Kein Schwung, volle Range", alt: "KH Curl + Dips" }
-    ]
-  },
-  lowerA: {
-    name: "Lower A — Quad-Fokus",
-    code: "LA",
-    exercises: [
-      { id: "la1", name: "Kniebeugen Langhantel", sets: 4, reps: "6-8", rpe: "8", rest: 180, cues: "Knie über Zehenspitzen, Brust auf, parallel oder tiefer", alt: "Front Squat" },
-      { id: "la2", name: "Rumänisches Kreuzheben", sets: 3, reps: "8-10", rpe: "8", rest: 150, cues: "Hüfte zurück, leichte Kniebeuge, Stange nah am Körper", alt: "KH Romanian DL" },
-      { id: "la3", name: "Beinpresse", sets: 3, reps: "10-12", rpe: "9", rest: 120, cues: "Fußposition mittig, kontrolliertes Tempo", alt: "Hack Squat" },
-      { id: "la4", name: "Beinbeuger liegend", sets: 3, reps: "10-12", rpe: "9", rest: 90, cues: "Hüfte gepresst, volle Kontraktion", alt: "Beinbeuger sitzend" },
-      { id: "la5", name: "Wadenheben stehend", sets: 4, reps: "10-12", rpe: "9", rest: 60, cues: "Volle Range, 1 Sek Pause oben", alt: "Wadenheben Beinpresse" },
-      { id: "la6", name: "Plank", sets: 3, reps: "45-60s", rpe: "8", rest: 60, cues: "Bauch anspannen, gerade Linie", alt: "Hanging Leg Raise" }
-    ]
-  },
-  upperB: {
-    name: "Upper B — Pull-Fokus",
-    code: "UB",
-    exercises: [
-      { id: "ub1", name: "Schrägbankdrücken Langhantel", sets: 4, reps: "6-8", rpe: "8", rest: 180, cues: "30° Neigung, Schulterblätter zusammen", alt: "Schrägbank KH" },
-      { id: "ub2", name: "Langhantelrudern (Pendlay)", sets: 4, reps: "6-8", rpe: "8", rest: 150, cues: "Horizontaler Rücken, explosiv hoch", alt: "Chest-supported Row" },
-      { id: "ub3", name: "Kurzhantel Schrägbank", sets: 3, reps: "8-10", rpe: "8", rest: 120, cues: "Brust gestreckt, KH zusammen oben", alt: "Brust-Maschine" },
-      { id: "ub4", name: "Lat-Pulldown eng (V-Griff)", sets: 3, reps: "10-12", rpe: "8", rest: 90, cues: "Ellenbogen zur Hüfte ziehen", alt: "Klimmzug eng" },
-      { id: "ub5", name: "Face Pulls", sets: 3, reps: "12-15", rpe: "9", rest: 60, cues: "Hohe Position, externe Rotation", alt: "Reverse Pec Deck" },
-      { id: "ub6", name: "Hammer Curl + French Press (Superset)", sets: 3, reps: "10-12", rpe: "9", rest: 90, cues: "Langsame Negative", alt: "Konzentrationscurl + Pushdown" }
-    ]
-  },
-  lowerB: {
-    name: "Lower B — Posterior-Fokus",
-    code: "LB",
-    exercises: [
-      { id: "lb1", name: "Kreuzheben konventionell", sets: 3, reps: "5", rpe: "8", rest: 240, cues: "Stange am Schienbein, neutraler Rücken, Lats anspannen", alt: "Trap-Bar Deadlift" },
-      { id: "lb2", name: "Bulgarian Split Squat", sets: 3, reps: "8-10/Seite", rpe: "8", rest: 120, cues: "Aufrechter Oberkörper, vorderes Knie über Fuß", alt: "Walking Lunge" },
-      { id: "lb3", name: "Hip Thrust Langhantel", sets: 3, reps: "8-10", rpe: "8", rest: 120, cues: "Gesäß voll anspannen oben, Kinn zur Brust", alt: "Glute Bridge" },
-      { id: "lb4", name: "Beinstrecker", sets: 3, reps: "12-15", rpe: "9", rest: 60, cues: "1 Sek halten oben, kontrolliert ab", alt: "Sissy Squat" },
-      { id: "lb5", name: "Wadenheben sitzend", sets: 4, reps: "15-20", rpe: "9", rest: 60, cues: "Voll dehnen, voll kontrahieren", alt: "Donkey Calf Raise" },
-      { id: "lb6", name: "Hängendes Beinheben", sets: 3, reps: "10-12", rpe: "9", rest: 60, cues: "Becken kippen, kein Schwung", alt: "Cable Crunch" }
-    ]
-  }
+/* Standard-Plan als DATEN (Array-Form) — dient als Vorlage & Fallback.
+   Pläne liegen zur Laufzeit in state.plans[]. Diese Konstante wird beim
+   ersten Start in den State migriert und bleibt Fallback für alte Historie. */
+const DEFAULT_PLAN = {
+  id: "default",
+  name: "Upper/Lower 4er (Hypertrophie)",
+  days: [
+    {
+      code: "UA", name: "Upper A — Push-Fokus", weekday: "Mo",
+      exercises: [
+        { id: "ua1", name: "Bankdrücken Langhantel", sets: 4, reps: "6-8", rpe: "8", rest: 180, cues: "Schulterblätter zusammen, Brust raus, Stange zu unterer Brust", alt: "Schrägbankdrücken LH" },
+        { id: "ua2", name: "Klimmzüge (oder Latzug breit)", sets: 4, reps: "6-10", rpe: "8", rest: 150, cues: "Voll ausstrecken unten, Brust zur Stange", alt: "Latzug breit" },
+        { id: "ua3", name: "Schulterdrücken Kurzhantel", sets: 3, reps: "8-10", rpe: "8", rest: 120, cues: "Sitzend, keine Hyperextension", alt: "Schulterdrücken Maschine" },
+        { id: "ua4", name: "Rudern T-Bar oder LH", sets: 3, reps: "8-10", rpe: "8", rest: 120, cues: "Ellenbogen nach hinten, Lat anspannen", alt: "Kabelrudern eng" },
+        { id: "ua5", name: "Seitheben Kurzhantel", sets: 3, reps: "12-15", rpe: "9", rest: 60, cues: "Leicht vorgeneigt, Ellenbogen führen", alt: "Seitheben Kabel" },
+        { id: "ua6", name: "Bizeps Curl LH + Trizeps Pushdown (Superset)", sets: 3, reps: "10-12", rpe: "9", rest: 90, cues: "Kein Schwung, volle Range", alt: "KH Curl + Dips" }
+      ]
+    },
+    {
+      code: "LA", name: "Lower A — Quad-Fokus", weekday: "Di",
+      exercises: [
+        { id: "la1", name: "Kniebeugen Langhantel", sets: 4, reps: "6-8", rpe: "8", rest: 180, cues: "Knie über Zehenspitzen, Brust auf, parallel oder tiefer", alt: "Front Squat" },
+        { id: "la2", name: "Rumänisches Kreuzheben", sets: 3, reps: "8-10", rpe: "8", rest: 150, cues: "Hüfte zurück, leichte Kniebeuge, Stange nah am Körper", alt: "KH Romanian DL" },
+        { id: "la3", name: "Beinpresse", sets: 3, reps: "10-12", rpe: "9", rest: 120, cues: "Fußposition mittig, kontrolliertes Tempo", alt: "Hack Squat" },
+        { id: "la4", name: "Beinbeuger liegend", sets: 3, reps: "10-12", rpe: "9", rest: 90, cues: "Hüfte gepresst, volle Kontraktion", alt: "Beinbeuger sitzend" },
+        { id: "la5", name: "Wadenheben stehend", sets: 4, reps: "10-12", rpe: "9", rest: 60, cues: "Volle Range, 1 Sek Pause oben", alt: "Wadenheben Beinpresse" },
+        { id: "la6", name: "Plank", sets: 3, reps: "45-60s", rpe: "8", rest: 60, cues: "Bauch anspannen, gerade Linie", alt: "Hanging Leg Raise" }
+      ]
+    },
+    {
+      code: "UB", name: "Upper B — Pull-Fokus", weekday: "Do",
+      exercises: [
+        { id: "ub1", name: "Schrägbankdrücken Langhantel", sets: 4, reps: "6-8", rpe: "8", rest: 180, cues: "30° Neigung, Schulterblätter zusammen", alt: "Schrägbank KH" },
+        { id: "ub2", name: "Langhantelrudern (Pendlay)", sets: 4, reps: "6-8", rpe: "8", rest: 150, cues: "Horizontaler Rücken, explosiv hoch", alt: "Chest-supported Row" },
+        { id: "ub3", name: "Kurzhantel Schrägbank", sets: 3, reps: "8-10", rpe: "8", rest: 120, cues: "Brust gestreckt, KH zusammen oben", alt: "Brust-Maschine" },
+        { id: "ub4", name: "Lat-Pulldown eng (V-Griff)", sets: 3, reps: "10-12", rpe: "8", rest: 90, cues: "Ellenbogen zur Hüfte ziehen", alt: "Klimmzug eng" },
+        { id: "ub5", name: "Face Pulls", sets: 3, reps: "12-15", rpe: "9", rest: 60, cues: "Hohe Position, externe Rotation", alt: "Reverse Pec Deck" },
+        { id: "ub6", name: "Hammer Curl + French Press (Superset)", sets: 3, reps: "10-12", rpe: "9", rest: 90, cues: "Langsame Negative", alt: "Konzentrationscurl + Pushdown" }
+      ]
+    },
+    {
+      code: "LB", name: "Lower B — Posterior-Fokus", weekday: "Fr",
+      exercises: [
+        { id: "lb1", name: "Kreuzheben konventionell", sets: 3, reps: "5", rpe: "8", rest: 240, cues: "Stange am Schienbein, neutraler Rücken, Lats anspannen", alt: "Trap-Bar Deadlift" },
+        { id: "lb2", name: "Bulgarian Split Squat", sets: 3, reps: "8-10/Seite", rpe: "8", rest: 120, cues: "Aufrechter Oberkörper, vorderes Knie über Fuß", alt: "Walking Lunge" },
+        { id: "lb3", name: "Hip Thrust Langhantel", sets: 3, reps: "8-10", rpe: "8", rest: 120, cues: "Gesäß voll anspannen oben, Kinn zur Brust", alt: "Glute Bridge" },
+        { id: "lb4", name: "Beinstrecker", sets: 3, reps: "12-15", rpe: "9", rest: 60, cues: "1 Sek halten oben, kontrolliert ab", alt: "Sissy Squat" },
+        { id: "lb5", name: "Wadenheben sitzend", sets: 4, reps: "15-20", rpe: "9", rest: 60, cues: "Voll dehnen, voll kontrahieren", alt: "Donkey Calf Raise" },
+        { id: "lb6", name: "Hängendes Beinheben", sets: 3, reps: "10-12", rpe: "9", rest: 60, cues: "Becken kippen, kein Schwung", alt: "Cable Crunch" }
+      ]
+    }
+  ]
 };
 
-const PLAN_ORDER = ["upperA", "lowerA", "upperB", "lowerB"];
-const PLAN_DAYS = ["Mo", "Di", "Do", "Fr"]; // empfohlene Wochentage
+/* ---- Plan-Helfer (arbeiten auf state.plans) ---- */
+function getActivePlan() {
+  let p = state.plans.find(pl => pl.id === state.activePlanId);
+  if (!p) p = state.plans[0];
+  return p || DEFAULT_PLAN;
+}
+function getPlanDays() {
+  return getActivePlan().days || [];
+}
+function getDay(idx) {
+  const days = getPlanDays();
+  return days[(idx % days.length + days.length) % days.length];
+}
+function getExerciseDef(id) {
+  for (const pl of state.plans || []) {
+    for (const d of pl.days) { const ex = d.exercises.find(e => e.id === id); if (ex) return ex; }
+  }
+  for (const d of DEFAULT_PLAN.days) { const ex = d.exercises.find(e => e.id === id); if (ex) return ex; }
+  return null;
+}
+function getExerciseName(id, fallback) {
+  const d = getExerciseDef(id);
+  return d ? d.name : (fallback || id);
+}
 
 /* =================================================================
    NUTRITION PLAN — 7 Day Sample (~3300 kcal)
@@ -1272,27 +1380,101 @@ const FOOD_DB = [
 const STORAGE_KEY = "ironlog_v1";
 
 let state = {
-  currentDay: "upperA",          // ausgewähltes Workout heute
-  activeWorkout: null,            // {day, started, exercises: [{id, sets: [{w,r,done}]}]}
-  workoutHistory: [],             // [{date, day, exercises}]
+  schemaVersion: 2,
+  currentDayIdx: 0,               // Index in den Tagen des aktiven Plans
+  activeWorkout: null,            // {planId, dayIdx, dayCode, dayName, started, exercises:[{id,name,sets}]}
+  workoutHistory: [],             // [{date, dayCode, dayName, exercises:[{id,name,sets}]}]
   weights: [],                    // [{date, kg}]
   nutrition: {},                  // {YYYY-MM-DD: [{name, amount, kcal, p, f, c, meal}]}
   selectedMealDay: 0,
-  notes: {},                      // {exId: "Notiztext"} — persistiert pro Übung
-  customFoods: [],                // [{name, kcal, p, f, c, barcode}] — gescannte/eigene Lebensmittel
-  settings: {                     // benutzerdefinierte Einstellungen
-    volume: 0.5,                  // Signalton-Lautstärke 0..1
-    soundEnabled: true            // Ton an/aus
+  notes: {},                      // {exId: "Notiztext"}
+  customFoods: [],                // [{name, kcal, p, f, c, barcode}]
+  mealGroups: [],                 // [{id, name, items:[{name,amount,kcal,p,f,c,meal,barcode}]}]
+  plans: [],                      // [{id, name, days:[{code,name,weekday,exercises:[...]}]}]
+  activePlanId: "default",
+  profile: null,                  // {name, sex, age, height, weight, activity, goalDelta}
+  targets: null,                  // {kcal, protein, fat, carbs}
+  settings: {
+    volume: 0.5,
+    soundEnabled: true
   }
 };
 
+function computeTargets(p) {
+  // Mifflin-St Jeor
+  const s = p.sex === 'f' ? -161 : 5;
+  const bmr = 10 * p.weight + 6.25 * p.height - 5 * p.age + s;
+  const tdee = bmr * (p.activity || 1.55);
+  const kcal = Math.max(1200, Math.round((tdee + (p.goalDelta || 0)) / 10) * 10);
+  const protein = Math.round(p.weight * 2.0);
+  const fat = Math.round(p.weight * 0.9);
+  const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4));
+  return { kcal, protein, fat, carbs };
+}
+
+const PLAN_WEEKDAYS = ["Mo","Di","Do","Fr","Sa","So","Mi"]; // Fallback-Wochentags-Hints
+
 function normalizeState() {
-  // Stellt sicher, dass auch alte JSON-Importe (ohne neue Felder) gültig sind
   if (!state.notes || typeof state.notes !== 'object') state.notes = {};
   if (!Array.isArray(state.customFoods)) state.customFoods = [];
+  if (!Array.isArray(state.mealGroups)) state.mealGroups = [];
   if (!state.settings || typeof state.settings !== 'object') state.settings = {};
   if (typeof state.settings.volume !== 'number') state.settings.volume = 0.5;
   if (typeof state.settings.soundEnabled !== 'boolean') state.settings.soundEnabled = true;
+
+  // --- Plan-Migration (alte Versionen: kein state.plans) ---
+  if (!Array.isArray(state.plans) || state.plans.length === 0) {
+    state.plans = [JSON.parse(JSON.stringify(DEFAULT_PLAN))];
+    state.activePlanId = "default";
+  }
+  if (!state.activePlanId) state.activePlanId = state.plans[0].id;
+
+  // alte currentDay-Keys (z.B. "upperA") -> Index migrieren
+  if (state.currentDay !== undefined) {
+    const map = { upperA:0, lowerA:1, upperB:2, lowerB:3 };
+    state.currentDayIdx = map[state.currentDay] ?? 0;
+    delete state.currentDay;
+  }
+  if (typeof state.currentDayIdx !== 'number') state.currentDayIdx = 0;
+
+  // alte activeWorkout.day (Key) -> dayIdx/dayCode migrieren
+  if (state.activeWorkout && state.activeWorkout.day !== undefined) {
+    const map = { upperA:0, lowerA:1, upperB:2, lowerB:3 };
+    const idx = map[state.activeWorkout.day] ?? 0;
+    const d = getActivePlan().days[idx];
+    state.activeWorkout.dayIdx = idx;
+    state.activeWorkout.dayCode = d?.code || '';
+    state.activeWorkout.dayName = d?.name || '';
+    delete state.activeWorkout.day;
+  }
+
+  // alte Historie (.day Key, Übungen ohne name) -> dayCode/Name + Übungsnamen ergänzen
+  const dayKeyMap = { upperA:["UA","Upper A — Push-Fokus"], lowerA:["LA","Lower A — Quad-Fokus"], upperB:["UB","Upper B — Pull-Fokus"], lowerB:["LB","Lower B — Posterior-Fokus"] };
+  state.workoutHistory.forEach(w => {
+    if (w.day !== undefined && !w.dayCode) {
+      const m = dayKeyMap[w.day];
+      if (m) { w.dayCode = m[0]; w.dayName = m[1]; }
+      delete w.day;
+    }
+    (w.exercises || []).forEach(ex => {
+      if (!ex.name) ex.name = getExerciseName(ex.id, ex.id);
+    });
+  });
+
+  // --- Profil & Targets ---
+  if (!state.profile) {
+    const hasData = (state.workoutHistory && state.workoutHistory.length) || (state.weights && state.weights.length);
+    const latestWeight = state.weights && state.weights.length ? state.weights[state.weights.length-1].kg : null;
+    if (hasData) {
+      // bestehender Nutzer (Markus): Werte aus bisheriger App übernehmen
+      state.profile = { name: "Markus F.", sex: "m", age: 37, height: 183, weight: latestWeight || 84, activity: 1.6, goalDelta: 400 };
+    } else {
+      // frischer Start: neutrale Defaults, Nutzer konfiguriert selbst
+      state.profile = { name: "", sex: "m", age: 30, height: 178, weight: 78, activity: 1.55, goalDelta: 300 };
+    }
+  }
+  if (!state.targets) state.targets = computeTargets(state.profile);
+  state.schemaVersion = 2;
 }
 function loadState() {
   try {
@@ -1390,45 +1572,40 @@ function renderToday() {
   const kcal = todayN.reduce((s,x) => s + x.kcal, 0);
   const prot = todayN.reduce((s,x) => s + x.p, 0);
   document.getElementById('statKcal').innerHTML =
-    `${Math.round(kcal)}<span class="stat-unit">/ 3300</span>`;
+    `${Math.round(kcal)}<span class="stat-unit">/ ${state.targets.kcal}</span>`;
   document.getElementById('statKcalDelta').textContent =
     `${Math.round(prot)}g Protein · ${todayN.length} Items`;
 
-  // Day tabs
+  // Day tabs (datengetrieben aus aktivem Plan)
   const tabs = document.getElementById('dayTabs');
   tabs.innerHTML = '';
-  PLAN_ORDER.forEach((key, i) => {
+  getPlanDays().forEach((d, i) => {
     const t = document.createElement('div');
-    t.className = 'day-tab' + (state.currentDay === key ? ' active' : '');
-    t.textContent = `${PLAN_DAYS[i]} · ${TRAINING_PLAN[key].code}`;
+    t.className = 'day-tab' + (state.currentDayIdx === i ? ' active' : '');
+    t.textContent = `${d.weekday ? d.weekday + ' · ' : ''}${d.code}`;
     t.onclick = () => {
-      state.currentDay = key;
+      state.currentDayIdx = i;
       saveState();
       renderToday();
     };
     tabs.appendChild(t);
   });
 
-  document.getElementById('todayWorkoutName').textContent = TRAINING_PLAN[state.currentDay].name;
+  document.getElementById('todayWorkoutName').textContent = getDay(state.currentDayIdx)?.name || '—';
   document.getElementById('todaySubtitle').textContent =
     state.activeWorkout ? 'Training läuft — antippen zum Fortsetzen' : 'Übersicht & Schnellstart';
 
   document.getElementById('startWorkoutBtn').textContent =
     state.activeWorkout ? '▶ Training fortsetzen' : '▶ Training starten';
+
+  // Besitzer/Profilname im Footer
+  const ownerEl = document.getElementById('ownerLine');
+  if (ownerEl) ownerEl.textContent = `IRON.LOG · ${state.profile.name ? state.profile.name : 'Profil einrichten →'}`;
 }
 
 document.getElementById('startWorkoutBtn').onclick = () => {
-  if (!state.activeWorkout) {
-    state.activeWorkout = {
-      day: state.currentDay,
-      started: Date.now(),
-      exercises: TRAINING_PLAN[state.currentDay].exercises.map(ex => ({
-        id: ex.id,
-        sets: Array.from({length: ex.sets}, () => ({w:'', r:'', done:false}))
-      }))
-    };
-    saveState();
-  }
+  ensureActiveWorkout();
+  saveState();
   navigateTo('training');
 };
 
@@ -1443,17 +1620,18 @@ let openExercises = new Set();   // welche Übungen sind aufgeklappt (Laufzeit)
 function renderTraining() {
   const tabs = document.getElementById('trainingDayTabs');
   tabs.innerHTML = '';
-  PLAN_ORDER.forEach((key, i) => {
+  const activeIdx = state.activeWorkout ? state.activeWorkout.dayIdx : state.currentDayIdx;
+  getPlanDays().forEach((d, i) => {
     const t = document.createElement('div');
-    t.className = 'day-tab' + ((state.activeWorkout?.day || state.currentDay) === key ? ' active' : '');
-    t.textContent = `${PLAN_DAYS[i]} · ${TRAINING_PLAN[key].code}`;
+    t.className = 'day-tab' + (activeIdx === i ? ' active' : '');
+    t.textContent = `${d.weekday ? d.weekday + ' · ' : ''}${d.code}`;
     t.onclick = () => {
-      if (state.activeWorkout && state.activeWorkout.day !== key) {
+      if (state.activeWorkout && state.activeWorkout.dayIdx !== i) {
         if (!confirm("Aktives Training verwerfen und Tag wechseln?")) return;
         state.activeWorkout = null;
         stopTimer();
       }
-      state.currentDay = key;
+      state.currentDayIdx = i;
       openExercises.clear();
       saveState();
       renderTraining();
@@ -1461,16 +1639,17 @@ function renderTraining() {
     tabs.appendChild(t);
   });
 
-  const dayKey = state.activeWorkout?.day || state.currentDay;
-  const plan = TRAINING_PLAN[dayKey];
+  const dayIdx = state.activeWorkout ? state.activeWorkout.dayIdx : state.currentDayIdx;
+  const plan = getDay(dayIdx);
+  if (!plan) { document.getElementById('exerciseList').innerHTML = '<div class="empty">Kein Trainingstag vorhanden</div>'; return; }
   document.getElementById('trainingSubtitle').textContent = plan.name;
 
   const list = document.getElementById('exerciseList');
   list.innerHTML = '';
 
   plan.exercises.forEach((ex, exIdx) => {
-    // last performance
-    const lastWorkout = [...state.workoutHistory].reverse().find(w => w.day === dayKey);
+    // last performance (gleicher dayCode)
+    const lastWorkout = [...state.workoutHistory].reverse().find(w => w.dayCode === plan.code);
     const lastEx = lastWorkout?.exercises.find(e => e.id === ex.id);
 
     // current active sets
@@ -1552,11 +1731,16 @@ function toggleExercise(exId) {
 
 function ensureActiveWorkout() {
   if (!state.activeWorkout) {
+    const day = getDay(state.currentDayIdx);
     state.activeWorkout = {
-      day: state.currentDay,
+      planId: state.activePlanId,
+      dayIdx: state.currentDayIdx,
+      dayCode: day.code,
+      dayName: day.name,
       started: Date.now(),
-      exercises: TRAINING_PLAN[state.currentDay].exercises.map(ex => ({
+      exercises: day.exercises.map(ex => ({
         id: ex.id,
+        name: ex.name,
         sets: Array.from({length: ex.sets}, () => ({w:'', r:'', done:false}))
       }))
     };
@@ -1576,7 +1760,7 @@ function updateSet(exId, setIdx, field, value) {
 function updateExerciseStatus(exId) {
   const ex = state.activeWorkout?.exercises.find(e => e.id === exId);
   if (!ex) return;
-  const exDef = Object.values(TRAINING_PLAN).flatMap(d => d.exercises).find(e => e.id === exId);
+  const exDef = getExerciseDef(exId);
   const total = exDef ? exDef.sets : ex.sets.length;
   const done = ex.sets.filter(s => s.done).length;
   const allDone = done === total;
@@ -1674,8 +1858,7 @@ function stopTimer() {
 let pendingNoteExId = null;
 function openNotesModal(exId) {
   pendingNoteExId = exId;
-  const exDef = Object.values(TRAINING_PLAN).flatMap(d => d.exercises).find(e => e.id === exId);
-  document.getElementById('noteTitle').textContent = exDef ? exDef.name : 'Notiz';
+  document.getElementById('noteTitle').textContent = getExerciseName(exId, 'Notiz');
   document.getElementById('noteText').value = state.notes[exId] || '';
   document.getElementById('notesModal').classList.add('active');
   setTimeout(() => document.getElementById('noteText').focus(), 100);
@@ -1715,9 +1898,11 @@ document.getElementById('finishWorkoutBtn').onclick = () => {
   const completed = {
     date: todayStr(),
     timestamp: Date.now(),
-    day: aw.day,
+    dayCode: aw.dayCode,
+    dayName: aw.dayName,
     exercises: aw.exercises.map(ex => ({
       id: ex.id,
+      name: ex.name || getExerciseName(ex.id, ex.id),
       sets: ex.sets.filter(s => s.done && s.w && s.r).map(s => ({
         w: parseFloat(s.w), r: parseInt(s.r)
       }))
@@ -1730,9 +1915,9 @@ document.getElementById('finishWorkoutBtn').onclick = () => {
   state.activeWorkout = null;
   stopTimer();
   openExercises.clear();
-  // advance plan day
-  const idx = PLAN_ORDER.indexOf(aw.day);
-  state.currentDay = PLAN_ORDER[(idx+1) % PLAN_ORDER.length];
+  // nächsten Tag im aktiven Plan vorwählen
+  const n = getPlanDays().length;
+  state.currentDayIdx = n ? (aw.dayIdx + 1) % n : 0;
   saveState();
   showToast("✓ Training gespeichert");
   navigateTo('today');
@@ -1745,6 +1930,18 @@ function openSettings() {
   document.getElementById('setSound').checked = state.settings.soundEnabled;
   document.getElementById('setVolume').value = Math.round(state.settings.volume * 100);
   document.getElementById('volLabel').textContent = Math.round(state.settings.volume * 100) + '%';
+  // Profil befüllen
+  const p = state.profile;
+  document.getElementById('pfName').value = p.name || '';
+  document.getElementById('pfSex').value = p.sex || 'm';
+  document.getElementById('pfAge').value = p.age || '';
+  document.getElementById('pfHeight').value = p.height || '';
+  document.getElementById('pfWeight').value = p.weight || '';
+  document.getElementById('pfActivity').value = String(p.activity || 1.55);
+  document.getElementById('pfGoal').value = String(p.goalDelta ?? 300);
+  document.getElementById('settingsOwner').textContent = p.name || 'nicht gesetzt';
+  document.getElementById('targetPreview').textContent =
+    `Aktuell: ${state.targets.kcal} kcal · ${state.targets.protein}P / ${state.targets.fat}F / ${state.targets.carbs}C`;
   document.getElementById('settingsModal').classList.add('active');
 }
 function closeSettings() {
@@ -1753,18 +1950,229 @@ function closeSettings() {
 function onVolumeInput() {
   const v = document.getElementById('setVolume').value;
   document.getElementById('volLabel').textContent = v + '%';
-  state.settings.volume = v / 100;   // live, damit "Ton testen" sofort passt
+  state.settings.volume = v / 100;
 }
 function updateSettings() {
   state.settings.soundEnabled = document.getElementById('setSound').checked;
   state.settings.volume = document.getElementById('setVolume').value / 100;
   saveState();
 }
+function saveProfile() {
+  const p = {
+    name: document.getElementById('pfName').value.trim(),
+    sex: document.getElementById('pfSex').value,
+    age: parseInt(document.getElementById('pfAge').value) || 30,
+    height: parseFloat(document.getElementById('pfHeight').value) || 175,
+    weight: parseFloat(document.getElementById('pfWeight').value) || 75,
+    activity: parseFloat(document.getElementById('pfActivity').value) || 1.55,
+    goalDelta: parseInt(document.getElementById('pfGoal').value) || 0
+  };
+  state.profile = p;
+  state.targets = computeTargets(p);
+  saveState();
+  document.getElementById('targetPreview').textContent =
+    `Neu: ${state.targets.kcal} kcal · ${state.targets.protein}P / ${state.targets.fat}F / ${state.targets.carbs}C`;
+  document.getElementById('settingsOwner').textContent = p.name || 'nicht gesetzt';
+  showToast("✓ Profil gespeichert");
+  renderToday();
+}
+
+/* =================================================================
+   MAHLZEITEN-GRUPPEN
+   ================================================================= */
+function openGroupsModal() {
+  renderMealGroups();
+  document.getElementById('groupsModal').classList.add('active');
+}
+function closeGroupsModal() {
+  document.getElementById('groupsModal').classList.remove('active');
+}
+function renderMealGroups() {
+  const el = document.getElementById('groupsList');
+  if (!el) return;
+  if (!state.mealGroups.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📦</div>Noch keine Gruppen gespeichert</div>';
+    return;
+  }
+  el.innerHTML = state.mealGroups.map(g => {
+    const kcal = g.items.reduce((s,x) => s + x.kcal, 0);
+    return `
+      <div class="food-item" onclick="applyGroup('${g.id}')">
+        <div style="flex:1; min-width:0;">
+          <div class="food-name">📦 ${g.name}</div>
+          <div class="food-macro">${g.items.length} Lebensmittel · ${Math.round(kcal)} kcal</div>
+        </div>
+        <button onclick="event.stopPropagation(); deleteGroup('${g.id}')" style="background:none;border:none;color:var(--text-faint);font-size:18px;cursor:pointer;padding:0 4px;">×</button>
+      </div>`;
+  }).join('');
+}
+function saveTodayAsGroup() {
+  const todayN = state.nutrition[todayStr()] || [];
+  if (!todayN.length) { showToast("Heute noch nichts eingetragen", true); return; }
+  const name = prompt("Name der Gruppe (z.B. Frühstück):");
+  if (!name) return;
+  const items = todayN.map(it => ({
+    name: it.name, amount: it.amount, kcal: it.kcal, p: it.p, f: it.f, c: it.c,
+    meal: it.meal, barcode: it.barcode || null
+  }));
+  state.mealGroups.push({ id: 'g' + Date.now(), name: name.trim(), items });
+  saveState();
+  showToast(`✓ Gruppe „${name.trim()}" gespeichert`);
+}
+function applyGroup(id) {
+  const g = state.mealGroups.find(x => x.id === id);
+  if (!g) return;
+  const today = todayStr();
+  if (!state.nutrition[today]) state.nutrition[today] = [];
+  g.items.forEach(it => {
+    state.nutrition[today].push({ ...it, time: Date.now() });
+  });
+  saveState();
+  closeGroupsModal();
+  renderNutrition();
+  renderToday();
+  const kcal = g.items.reduce((s,x) => s + x.kcal, 0);
+  showToast(`+ ${g.name}: ${Math.round(kcal)} kcal`);
+}
+function deleteGroup(id) {
+  if (!confirm("Gruppe löschen?")) return;
+  state.mealGroups = state.mealGroups.filter(g => g.id !== id);
+  saveState();
+  renderMealGroups();
+}
+
+/* =================================================================
+   TRAININGSPLÄNE (verwalten / import / export)
+   ================================================================= */
+function openPlansModal() {
+  renderPlansList();
+  document.getElementById('plansModal').classList.add('active');
+}
+function closePlansModal() {
+  document.getElementById('plansModal').classList.remove('active');
+}
+function renderPlansList() {
+  const el = document.getElementById('plansList');
+  el.innerHTML = state.plans.map(pl => {
+    const active = pl.id === state.activePlanId;
+    const dayCount = pl.days.length;
+    const exCount = pl.days.reduce((s,d) => s + d.exercises.length, 0);
+    return `
+      <div class="food-item" onclick="setActivePlan('${pl.id}')" style="${active?'border-color:var(--accent);':''}">
+        <div style="flex:1; min-width:0;">
+          <div class="food-name">${active ? '✓ ' : ''}${pl.name}</div>
+          <div class="food-macro">${dayCount} Tage · ${exCount} Übungen</div>
+        </div>
+        ${pl.id !== 'default' ? `<button onclick="event.stopPropagation(); deletePlan('${pl.id}')" style="background:none;border:none;color:var(--text-faint);font-size:18px;cursor:pointer;padding:0 4px;">×</button>` : '<span class="food-macro">Standard</span>'}
+      </div>`;
+  }).join('');
+}
+function setActivePlan(id) {
+  if (state.activeWorkout && !confirm("Aktives Training läuft. Plan trotzdem wechseln? Das laufende Training wird verworfen.")) return;
+  if (state.activeWorkout) { state.activeWorkout = null; stopTimer(); }
+  state.activePlanId = id;
+  state.currentDayIdx = 0;
+  openExercises.clear();
+  saveState();
+  renderPlansList();
+  showToast("✓ Plan aktiviert");
+  renderToday();
+}
+function deletePlan(id) {
+  if (id === 'default') return;
+  if (!confirm("Diesen Plan löschen? (Deine Trainings-Historie bleibt erhalten)")) return;
+  state.plans = state.plans.filter(p => p.id !== id);
+  if (state.activePlanId === id) { state.activePlanId = state.plans[0].id; state.currentDayIdx = 0; }
+  saveState();
+  renderPlansList();
+  renderToday();
+}
+function slugify(str) {
+  return (str || 'ex').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,12) || 'ex';
+}
+function validateAndNormalizePlan(obj) {
+  if (!obj || !Array.isArray(obj.days) || obj.days.length === 0) throw new Error("Keine 'days' gefunden");
+  const planId = 'p' + Date.now();
+  const usedIds = new Set();
+  const days = obj.days.map((d, di) => {
+    if (!Array.isArray(d.exercises) || d.exercises.length === 0) throw new Error(`Tag ${di+1} hat keine Übungen`);
+    const exercises = d.exercises.map((e, ei) => {
+      if (!e.name) throw new Error(`Tag ${di+1}, Übung ${ei+1}: 'name' fehlt`);
+      // eindeutige ID erzeugen (innerhalb dieses Plans)
+      let base = planId + '_' + slugify(e.name);
+      let id = base; let k = 1;
+      while (usedIds.has(id)) { id = base + (k++); }
+      usedIds.add(id);
+      return {
+        id,
+        name: String(e.name).slice(0,80),
+        sets: Math.max(1, parseInt(e.sets) || 3),
+        reps: String(e.reps || "8-12"),
+        rpe: String(e.rpe || "8"),
+        rest: Math.max(0, parseInt(e.rest) || 120),
+        cues: String(e.cues || ""),
+        alt: String(e.alt || "")
+      };
+    });
+    return {
+      code: String(d.code || ('T' + (di+1))).slice(0,6),
+      name: String(d.name || ('Tag ' + (di+1))).slice(0,60),
+      weekday: d.weekday ? String(d.weekday).slice(0,4) : "",
+      exercises
+    };
+  });
+  return { id: planId, name: String(obj.name || "Importierter Plan").slice(0,60), days };
+}
+function importPlan(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const plan = validateAndNormalizePlan(data);
+      state.plans.push(plan);
+      state.activePlanId = plan.id;
+      state.currentDayIdx = 0;
+      openExercises.clear();
+      saveState();
+      renderPlansList();
+      renderToday();
+      showToast(`✓ Plan „${plan.name}" importiert & aktiviert`);
+    } catch(err) {
+      alert("Plan-Import fehlgeschlagen:\n" + err.message + "\n\nFormat siehe PLAN-FORMAT.md");
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+function exportActivePlan() {
+  const pl = getActivePlan();
+  // Export im sauberen Import-Format (ohne interne IDs)
+  const out = {
+    type: "ironlog-plan",
+    schemaVersion: 2,
+    name: pl.name,
+    days: pl.days.map(d => ({
+      code: d.code, name: d.name, weekday: d.weekday,
+      exercises: d.exercises.map(e => ({
+        name: e.name, sets: e.sets, reps: e.reps, rpe: e.rpe, rest: e.rest, cues: e.cues, alt: e.alt
+      }))
+    }))
+  };
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `ironlog-plan-${slugify(pl.name)}.json`; a.click();
+  URL.revokeObjectURL(url);
+  showToast("✓ Plan exportiert");
+}
 
 /* =================================================================
    NUTRITION VIEW
    ================================================================= */
 function renderNutrition() {
+  const T = state.targets;
   const todayN = state.nutrition[todayStr()] || [];
   const kcal = todayN.reduce((s,x) => s + x.kcal, 0);
   const p = todayN.reduce((s,x) => s + x.p, 0);
@@ -1776,10 +2184,20 @@ function renderNutrition() {
   document.getElementById('nutFat').textContent = Math.round(f);
   document.getElementById('nutCarb').textContent = Math.round(c);
 
-  document.getElementById('progKcal').style.width = Math.min(100, kcal/3300*100) + '%';
-  document.getElementById('progProt').style.width = Math.min(100, p/170*100) + '%';
-  document.getElementById('progFat').style.width = Math.min(100, f/80*100) + '%';
-  document.getElementById('progCarb').style.width = Math.min(100, c/475*100) + '%';
+  // Ziel-Labels dynamisch
+  document.getElementById('tgtKcal').textContent = '/ ' + T.kcal;
+  document.getElementById('tgtProt').textContent = '/ ' + T.protein + 'g';
+  document.getElementById('tgtFat').textContent = '/ ' + T.fat + 'g';
+  document.getElementById('tgtCarb').textContent = '/ ' + T.carbs + 'g';
+  const sub = document.getElementById('nutSubtitle');
+  if (sub) sub.textContent = `${T.kcal} kcal · ${T.protein}P / ${T.fat}F / ${T.carbs}C`;
+
+  document.getElementById('progKcal').style.width = Math.min(100, kcal/T.kcal*100) + '%';
+  document.getElementById('progProt').style.width = Math.min(100, p/T.protein*100) + '%';
+  document.getElementById('progFat').style.width = Math.min(100, f/T.fat*100) + '%';
+  document.getElementById('progCarb').style.width = Math.min(100, c/T.carbs*100) + '%';
+
+  renderMealGroups();
 
   // Today food list grouped by meal
   const list = document.getElementById('todayFoodList');
@@ -2103,7 +2521,7 @@ function renderWeight() {
       data: {
         labels: wts.map(w => fmtDateShort(w.date)),
         datasets: [{
-          label: 'Gewicht (kg)',
+          label: 'Körpergewicht (kg)',
           data: wts.map(w => w.kg),
           borderColor: '#ff5722',
           backgroundColor: 'rgba(255,87,34,0.1)',
@@ -2179,16 +2597,13 @@ function renderProgress() {
     ctx.fillText('Noch keine Trainings absolviert', 200, 100);
   }
 
-  // Strength selector
+  // Strength selector — aus tatsächlich trainierten Übungen (History)
   const sel = document.getElementById('strengthExercise');
-  const allExIds = new Set();
-  state.workoutHistory.forEach(w => w.exercises.forEach(e => allExIds.add(e.id)));
-  const allEx = [];
-  PLAN_ORDER.forEach(dk => {
-    TRAINING_PLAN[dk].exercises.forEach(ex => {
-      if (allExIds.has(ex.id)) allEx.push(ex);
-    });
-  });
+  const seen = new Map(); // id -> name
+  state.workoutHistory.forEach(w => w.exercises.forEach(e => {
+    if (!seen.has(e.id)) seen.set(e.id, e.name || getExerciseName(e.id, e.id));
+  }));
+  const allEx = [...seen.entries()].map(([id, name]) => ({ id, name }));
   sel.innerHTML = allEx.map(e => `<option value="${e.id}">${e.name}</option>`).join('')
     || '<option>Keine Daten</option>';
   if (allEx.length > 0) renderStrengthChart();
@@ -2200,8 +2615,7 @@ function renderProgress() {
       ex.sets.forEach(s => {
         const e1 = estimate1RM(s.w, s.r);
         if (!prs[ex.id] || e1 > prs[ex.id].e1rm) {
-          const exDef = Object.values(TRAINING_PLAN).flatMap(d => d.exercises).find(e => e.id === ex.id);
-          prs[ex.id] = { name: exDef?.name || ex.id, e1rm: e1, w: s.w, r: s.r, date: w.date };
+          prs[ex.id] = { name: ex.name || getExerciseName(ex.id, ex.id), e1rm: e1, w: s.w, r: s.r, date: w.date };
         }
       });
     });
@@ -2299,6 +2713,18 @@ function importData(event) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
+      // Falls jemand hier eine Plan-Datei lädt: als Plan importieren statt Backup
+      if (data && data.type === 'ironlog-plan') {
+        const plan = validateAndNormalizePlan(data);
+        state.plans.push(plan);
+        state.activePlanId = plan.id;
+        state.currentDayIdx = 0;
+        openExercises.clear();
+        saveState();
+        showToast(`✓ Plan „${plan.name}" importiert`);
+        navigateTo('today');
+        return;
+      }
       if (!confirm("Aktuelle Daten überschreiben?")) return;
       state = { ...state, ...data };
       normalizeState();

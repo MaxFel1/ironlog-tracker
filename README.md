@@ -74,6 +74,9 @@ Alle **6–8 Wochen** eine Deload-Woche:
 - ✅ Einstellungen (Ton an/aus, Lautstärke)
 - ✅ Wöchentliches Gewichts-Logging mit Verlaufs-Diagramm
 - ✅ Kalorien-/Makro-Tracking mit 45+ Lebensmitteln
+- ✅ **Profil + automatische Kalorien/Makros** (Mifflin-St Jeor, frei konfigurierbar in ⚙)
+- ✅ **Mahlzeiten-Gruppen** (z.B. „Frühstück" als Bündel speichern & per Tap hinzufügen)
+- ✅ **Mehrere Trainingspläne** + Import/Export + Wechsel (siehe PLAN-FORMAT.md)
 - ✅ **Barcode-Scanner** (Open Food Facts Datenbank)
 - ✅ Volumen-Progression pro Woche (Balkendiagramm)
 - ✅ e1RM-Verlauf pro Übung (Epley-Formel)
@@ -81,6 +84,13 @@ Alle **6–8 Wochen** eine Deload-Woche:
 - ✅ Daten-Export/Import als JSON
 - ✅ Offline-fähig (Service Worker)
 - ✅ localStorage-Persistenz
+
+## 👤 Profil & Pläne (ab dieser Version)
+
+- **Profil** unter ⚙ Einstellungen: Name, Geschlecht, Alter, Größe, Gewicht, Aktivität, Ziel → Kalorien & Makros werden automatisch berechnet. Damit ist die App für jede Person nutzbar.
+- **Trainingspläne**: Unter ⚙ → „Pläne verwalten" kannst du Pläne importieren, exportieren und zwischen ihnen wechseln. Den Standard-Plan kann man nicht löschen.
+- **KI-generierte Pläne**: Mit `PLAN-FORMAT.md` lässt du dir von jeder KI einen Plan im passenden Format erstellen und importierst ihn.
+- Deine Trainings-Historie bleibt bei allen Änderungen erhalten.
 
 ## 📷 Barcode-Scanner
 
