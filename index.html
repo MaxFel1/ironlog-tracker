@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="#0f1216">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
@@ -19,19 +19,21 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 :root {
-  --bg: #0a0a0a;
-  --bg-elevated: #141414;
-  --bg-card: #1a1a1a;
-  --border: #262626;
-  --border-strong: #383838;
-  --text: #f5f5f5;
-  --text-dim: #8a8a8a;
-  --text-faint: #555;
-  --accent: #ff5722;
-  --accent-dim: #cc3a0a;
-  --success: #22c55e;
+  --bg: #0f1216;
+  --bg-elevated: #171b21;
+  --bg-card: #181c22;
+  --bg-inset: #12161b;
+  --border: #252b33;
+  --border-strong: #333a44;
+  --text: #eef1f5;
+  --text-dim: #9099a3;
+  --text-faint: #6a727c;
+  --accent: #5b8def;
+  --accent-press: #4a78d6;
+  --accent-soft: rgba(91,141,239,0.14);
+  --success: #34d399;
   --warning: #fbbf24;
-  --danger: #ef4444;
+  --danger: #f0616d;
   --safe-top: env(safe-area-inset-top, 0);
   --safe-bottom: env(safe-area-inset-bottom, 0);
 }
@@ -39,9 +41,9 @@
 html, body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Manrope', sans-serif;
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.55;
   min-height: 100vh;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
@@ -49,40 +51,40 @@ html, body {
 
 body {
   padding-top: var(--safe-top);
-  padding-bottom: calc(72px + var(--safe-bottom));
+  padding-bottom: calc(76px + var(--safe-bottom));
   max-width: 600px;
   margin: 0 auto;
   position: relative;
 }
 
-.mono { font-family: 'JetBrains Mono', monospace; }
-.display { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.03em; }
+.mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+.display { font-family: 'Sora', sans-serif; letter-spacing: -0.01em; }
 
 /* HEADER */
 header {
   position: sticky;
   top: 0;
-  background: rgba(10,10,10,0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(15,18,22,0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
-  padding: 14px 20px;
+  padding: 16px 20px;
   z-index: 100;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 header .logo {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 24px;
-  letter-spacing: 0.08em;
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: -0.01em;
 }
 header .logo .accent { color: var(--accent); }
 header .date {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-dim);
-  text-transform: uppercase;
+  font-weight: 500;
 }
 
 /* MAIN */
@@ -90,18 +92,16 @@ main { padding: 20px; }
 
 /* VIEW TITLE */
 .view-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 42px;
-  line-height: 1;
-  letter-spacing: 0.02em;
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
   margin-bottom: 4px;
 }
 .view-subtitle {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
   margin-bottom: 24px;
 }
 
@@ -109,67 +109,67 @@ main { padding: 20px; }
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 18px;
+  border-radius: 18px;
+  padding: 20px;
   margin-bottom: 14px;
 }
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 .card-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 20px;
-  letter-spacing: 0.04em;
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.01em;
 }
 .card-meta {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-dim);
-  text-transform: uppercase;
+  font-weight: 500;
 }
 
 /* STAT BLOCKS */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 14px;
 }
 .stat {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px;
+  border-radius: 18px;
+  padding: 16px;
 }
 .stat-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 6px;
-}
-.stat-value {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 32px;
-  line-height: 1;
-}
-.stat-unit {
-  font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   color: var(--text-dim);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.stat-value {
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.stat-unit {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 500;
   margin-left: 4px;
 }
 .stat-delta {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  margin-top: 4px;
+  font-size: 12px;
+  margin-top: 7px;
+  font-weight: 500;
 }
 .stat-delta.up { color: var(--success); }
-.stat-delta.down { color: var(--danger); }
+.stat-delta.down { color: var(--accent); }
 .stat-delta.flat { color: var(--text-dim); }
 
 /* BUTTONS */
@@ -177,44 +177,45 @@ main { padding: 20px; }
   background: var(--accent);
   color: #fff;
   border: none;
-  padding: 14px 20px;
-  border-radius: 10px;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 18px;
-  letter-spacing: 0.06em;
+  padding: 15px 20px;
+  border-radius: 14px;
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
   cursor: pointer;
   width: 100%;
   text-align: center;
-  transition: transform 0.1s;
-  text-transform: uppercase;
+  transition: transform 0.1s, background 0.15s;
 }
-.btn:active { transform: scale(0.97); }
+.btn:active { transform: scale(0.98); background: var(--accent-press); }
 .btn-secondary {
-  background: transparent;
+  background: var(--bg-inset);
   border: 1px solid var(--border-strong);
   color: var(--text);
 }
 .btn-ghost {
-  background: var(--bg-elevated);
+  background: var(--bg-inset);
   color: var(--text);
 }
 .btn-danger { background: var(--danger); }
 .btn-small {
-  padding: 8px 14px;
-  font-size: 14px;
+  padding: 9px 14px;
+  font-size: 13px;
   width: auto;
+  border-radius: 10px;
 }
 
 /* EXERCISE */
 .exercise {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 18px;
   margin-bottom: 12px;
   overflow: hidden;
 }
 .exercise-header {
-  padding: 16px;
+  padding: 18px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -222,33 +223,34 @@ main { padding: 20px; }
   user-select: none;
 }
 .exercise-name {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 22px;
-  letter-spacing: 0.02em;
-  line-height: 1.1;
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
   flex: 1;
 }
 .exercise-target {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-dim);
-  text-transform: uppercase;
-  margin-top: 4px;
+  margin-top: 5px;
+  font-weight: 500;
 }
 .exercise-status {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: var(--bg-elevated);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--bg-inset);
   color: var(--text-dim);
   white-space: nowrap;
   margin-left: 10px;
 }
-.exercise-status.done { background: var(--success); color: #000; }
+.exercise-status.done { background: var(--success); color: #06281d; }
 .exercise-body {
   display: none;
-  padding: 0 16px 16px;
+  padding: 0 18px 18px;
   border-top: 1px solid var(--border);
   padding-top: 16px;
 }
@@ -257,35 +259,36 @@ main { padding: 20px; }
 .cues {
   font-size: 13px;
   color: var(--text-dim);
-  font-style: italic;
   margin-bottom: 14px;
-  padding: 10px;
-  background: var(--bg);
-  border-radius: 6px;
-  border-left: 2px solid var(--accent);
+  padding: 12px 14px;
+  background: var(--accent-soft);
+  border-radius: 12px;
+  border-left: 3px solid var(--accent);
+  line-height: 1.5;
 }
 
 /* SET ROW */
 .set-row {
   display: grid;
-  grid-template-columns: 30px 1fr 1fr 36px;
+  grid-template-columns: 28px 1fr 1fr 40px;
   gap: 8px;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 7px;
 }
 .set-num {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-dim);
   text-align: center;
 }
 .set-row input {
-  background: var(--bg);
+  background: var(--bg-inset);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 12px 10px;
   color: var(--text);
   font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
   font-size: 16px;
   text-align: center;
   width: 100%;
@@ -293,6 +296,7 @@ main { padding: 20px; }
 .set-row input:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .set-row input.last {
   background: var(--bg-elevated);
@@ -300,45 +304,45 @@ main { padding: 20px; }
   font-size: 13px;
 }
 .set-check {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: var(--bg);
+  width: 40px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--bg-inset);
   border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   font-size: 18px;
+  transition: background 0.15s, border-color 0.15s;
 }
 .set-check.checked {
   background: var(--success);
   border-color: var(--success);
-  color: #000;
+  color: #06281d;
 }
 .set-header {
   display: grid;
-  grid-template-columns: 30px 1fr 1fr 36px;
+  grid-template-columns: 28px 1fr 1fr 40px;
   gap: 8px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-dim);
-  text-transform: uppercase;
+  font-weight: 600;
   text-align: center;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .timer {
   margin-top: 14px;
-  padding: 12px;
-  background: var(--bg);
-  border-radius: 8px;
+  padding: 14px;
+  background: var(--bg-inset);
+  border-radius: 14px;
   border: 1px solid var(--border-strong);
 }
 .timer-track {
   height: 8px;
   background: var(--border);
-  border-radius: 4px;
+  border-radius: 999px;
   overflow: hidden;
   margin-bottom: 10px;
 }
@@ -346,7 +350,7 @@ main { padding: 20px; }
   height: 100%;
   width: 100%;
   background: var(--accent);
-  border-radius: 4px;
+  border-radius: 999px;
   transition: width 0.1s linear, background 0.3s;
 }
 .timer-row {
@@ -355,10 +359,11 @@ main { padding: 20px; }
   justify-content: space-between;
 }
 .timer-label {
-  font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   color: var(--text-dim);
+  font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 .timer-value {
   font-family: 'JetBrains Mono', monospace;
@@ -371,11 +376,11 @@ main { padding: 20px; }
   gap: 6px;
 }
 .timer-btn {
-  background: var(--bg-elevated);
+  background: var(--bg-card);
   border: 1px solid var(--border-strong);
   color: var(--text);
-  padding: 8px 14px;
-  border-radius: 6px;
+  padding: 9px 14px;
+  border-radius: 10px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
   cursor: pointer;
@@ -384,11 +389,11 @@ main { padding: 20px; }
 /* NOTES & ACTIONS */
 .note-display {
   font-size: 13px;
-  color: var(--warning);
-  background: rgba(251,191,36,0.08);
-  border-left: 2px solid var(--warning);
-  border-radius: 6px;
-  padding: 10px;
+  color: #f3d27a;
+  background: rgba(251,191,36,0.10);
+  border-left: 3px solid var(--warning);
+  border-radius: 12px;
+  padding: 12px 14px;
   margin-bottom: 14px;
   white-space: pre-wrap;
   line-height: 1.5;
@@ -402,11 +407,12 @@ main { padding: 20px; }
   flex-wrap: wrap;
 }
 .exercise-actions .btn-small {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
   font-size: 13px;
 }
 .alt-text {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-faint);
 }
 /* Range slider */
@@ -415,7 +421,7 @@ input[type="range"] {
   appearance: none;
   height: 6px;
   background: var(--border);
-  border-radius: 3px;
+  border-radius: 999px;
   outline: none;
 }
 input[type="range"]::-webkit-slider-thumb {
@@ -440,44 +446,45 @@ input[type="range"]::-moz-range-thumb {
 .macro-bar {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 14px;
 }
 .macro {
   text-align: center;
-  padding: 10px 6px;
+  padding: 13px 8px;
   background: var(--bg-card);
-  border-radius: 8px;
+  border-radius: 14px;
   border: 1px solid var(--border);
 }
 .macro-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--text-dim);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
+  font-weight: 600;
 }
 .macro-value {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 22px;
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 19px;
   line-height: 1.1;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 .macro-target {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--text-faint);
 }
 .progress-bar {
-  height: 4px;
+  height: 5px;
   background: var(--border);
-  border-radius: 2px;
-  margin-top: 6px;
+  border-radius: 999px;
+  margin-top: 7px;
   overflow: hidden;
 }
 .progress-fill {
   height: 100%;
   background: var(--accent);
+  border-radius: 999px;
   transition: width 0.3s;
 }
 
@@ -485,8 +492,8 @@ input[type="range"]::-moz-range-thumb {
 .meal {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px;
+  border-radius: 14px;
+  padding: 16px;
   margin-bottom: 10px;
 }
 .meal-header {
@@ -496,19 +503,20 @@ input[type="range"]::-moz-range-thumb {
   margin-bottom: 8px;
 }
 .meal-name {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 18px;
-  letter-spacing: 0.04em;
+  font-family: 'Sora', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
 }
 .meal-kcal {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   color: var(--accent);
+  font-weight: 700;
 }
 .meal-items {
   font-size: 13px;
   color: var(--text-dim);
-  line-height: 1.6;
+  line-height: 1.7;
 }
 .meal-items li {
   list-style: none;
@@ -517,36 +525,35 @@ input[type="range"]::-moz-range-thumb {
 
 /* INPUTS */
 .input-group {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 .input-group label {
   display: block;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 6px;
+  font-weight: 600;
+  margin-bottom: 7px;
 }
 .input-group input, .input-group select {
   width: 100%;
-  background: var(--bg);
+  background: var(--bg-inset);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 14px;
   color: var(--text);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Manrope', sans-serif;
   font-size: 16px;
 }
 .input-group input:focus, .input-group select:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 /* TABS for day selection */
 .day-tabs {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 16px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -557,13 +564,13 @@ input[type="range"]::-moz-range-thumb {
   padding: 10px 16px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 999px;
   color: var(--text-dim);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  text-transform: uppercase;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
   cursor: pointer;
-  letter-spacing: 0.08em;
+  transition: all 0.15s;
 }
 .day-tab.active {
   background: var(--accent);
@@ -579,9 +586,9 @@ input[type="range"]::-moz-range-thumb {
   transform: translateX(-50%);
   width: 100%;
   max-width: 600px;
-  background: rgba(10,10,10,0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(15,18,22,0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--border);
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -593,7 +600,7 @@ input[type="range"]::-moz-range-thumb {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 12px 4px;
+  padding: 13px 4px;
   cursor: pointer;
   color: var(--text-faint);
   transition: color 0.15s;
@@ -601,18 +608,19 @@ input[type="range"]::-moz-range-thumb {
   background: none;
 }
 .nav-item.active { color: var(--accent); }
-.nav-icon { font-size: 20px; line-height: 1; }
+.nav-icon { font-size: 20px; line-height: 1; display: flex; }
+.nav-icon svg { width: 22px; height: 22px; }
 .nav-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 600;
   margin-top: 4px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
 }
 
 /* VIEW */
 .view { display: none; }
-.view.active { display: block; }
+.view.active { display: block; animation: fadein 0.25s ease; }
+@keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
 /* CHART CONTAINER */
 .chart-container {
@@ -626,17 +634,17 @@ input[type="range"]::-moz-range-thumb {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  padding: 13px 0;
   border-bottom: 1px solid var(--border);
 }
 .history-item:last-child { border-bottom: none; }
 .history-date {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-dim);
 }
 .history-value {
   font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
   font-size: 14px;
   font-weight: 700;
 }
@@ -645,7 +653,9 @@ input[type="range"]::-moz-range-thumb {
 .modal-bg {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(6,8,11,0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 200;
   display: none;
   align-items: center;
@@ -656,16 +666,19 @@ input[type="range"]::-moz-range-thumb {
 .modal {
   background: var(--bg-elevated);
   border: 1px solid var(--border-strong);
-  border-radius: 16px;
+  border-radius: 22px;
   padding: 24px;
   width: 100%;
   max-width: 400px;
-  max-height: 80vh;
+  max-height: 82vh;
   overflow-y: auto;
+  box-shadow: 0 24px 60px -16px rgba(0,0,0,0.6);
 }
 .modal-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 26px;
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 21px;
+  letter-spacing: -0.01em;
   margin-bottom: 16px;
 }
 
@@ -680,15 +693,17 @@ input[type="range"]::-moz-range-thumb {
 .food-item {
   display: flex;
   justify-content: space-between;
-  padding: 12px;
+  align-items: center;
+  padding: 13px 14px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  margin-bottom: 6px;
+  border-radius: 12px;
+  margin-bottom: 7px;
   cursor: pointer;
+  transition: background 0.15s;
 }
 .food-item:active { background: var(--bg-elevated); }
-.food-name { font-size: 14px; }
+.food-name { font-size: 14px; font-weight: 500; }
 .food-macro {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
@@ -725,19 +740,21 @@ input[type="range"]::-moz-range-thumb {
 /* TOAST */
 .toast {
   position: fixed;
-  bottom: 90px;
+  bottom: 94px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--success);
-  color: #000;
+  color: #06281d;
   padding: 12px 20px;
-  border-radius: 8px;
-  font-family: 'JetBrains Mono', monospace;
+  border-radius: 999px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
   font-size: 13px;
   z-index: 300;
   opacity: 0;
   transition: opacity 0.3s;
   pointer-events: none;
+  box-shadow: 0 10px 30px -8px rgba(0,0,0,0.5);
 }
 .toast.show { opacity: 1; }
 .toast.error { background: var(--danger); color: #fff; }
@@ -798,6 +815,9 @@ input[type="range"]::-moz-range-thumb {
 
   <div id="ownerLine" style="text-align:center; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); margin-top:8px; letter-spacing:0.05em;">
     IRON.LOG
+  </div>
+  <div style="text-align:center; margin-top:10px;">
+    <button onclick="openFeedback()" style="background:none; border:none; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:12px; cursor:pointer; text-decoration:underline;">💬 Feedback geben</button>
   </div>
 </section>
 
@@ -957,23 +977,23 @@ input[type="range"]::-moz-range-thumb {
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
   <button class="nav-item active" data-view="today">
-    <div class="nav-icon">⌂</div>
+    <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 9v11h14V9"/></svg></div>
     <div class="nav-label">Heute</div>
   </button>
   <button class="nav-item" data-view="training">
-    <div class="nav-icon">💪</div>
+    <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7v10M18 7v10M3 12h18M2 10v4M22 10v4"/></svg></div>
     <div class="nav-label">Training</div>
   </button>
   <button class="nav-item" data-view="nutrition">
-    <div class="nav-icon">🍽</div>
+    <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18M19 3v6a3 3 0 01-6 0V3M16 3v18"/></svg></div>
     <div class="nav-label">Food</div>
   </button>
   <button class="nav-item" data-view="weight">
-    <div class="nav-icon">⚖</div>
+    <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
     <div class="nav-label">Körper</div>
   </button>
   <button class="nav-item" data-view="progress">
-    <div class="nav-icon">📊</div>
+    <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg></div>
     <div class="nav-label">Stats</div>
   </button>
 </nav>
@@ -1081,7 +1101,7 @@ input[type="range"]::-moz-range-thumb {
     <div class="modal-title" id="noteTitle">Notiz</div>
     <div class="input-group">
       <label>Deine Notiz (wird nächste Woche bei dieser Übung angezeigt)</label>
-      <textarea id="noteText" rows="4" placeholder="z.B. Bei 80kg Schulter gespürt → enger greifen / Maschine X war besetzt / Griff anpassen" style="width:100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; resize: vertical;"></textarea>
+      <textarea id="noteText" rows="4" placeholder="z.B. Bei 80kg Schulter gespürt → enger greifen / Maschine X war besetzt / Griff anpassen" style="width:100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: var(--text); font-family: 'Manrope', sans-serif; font-size: 15px; resize: vertical;"></textarea>
     </div>
     <button class="btn" onclick="saveNote()">✓ Speichern</button>
     <div style="height:8px"></div>
@@ -1094,7 +1114,7 @@ input[type="range"]::-moz-range-thumb {
   <div class="modal">
     <div class="modal-title">Einstellungen</div>
 
-    <div style="font-family:'Bebas Neue'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Profil</div>
+    <div style="font-family:'Sora'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Profil</div>
     <div class="input-group">
       <label>Name</label>
       <input type="text" id="pfName" placeholder="Dein Name">
@@ -1142,11 +1162,11 @@ input[type="range"]::-moz-range-thumb {
     <div id="targetPreview" class="mono" style="font-size:11px; color:var(--text-dim); text-align:center; margin-top:8px;"></div>
 
     <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
-    <div style="font-family:'Bebas Neue'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Trainingsplan</div>
+    <div style="font-family:'Sora'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Trainingsplan</div>
     <button class="btn btn-secondary btn-small" onclick="closeSettings(); openPlansModal();" style="width:100%;">Pläne verwalten / importieren</button>
 
     <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
-    <div style="font-family:'Bebas Neue'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Signalton</div>
+    <div style="font-family:'Sora'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Signalton</div>
     <div class="input-group">
       <div style="display:flex; align-items:center; gap:12px;">
         <input type="checkbox" id="setSound" onchange="updateSettings()" style="width:auto; transform:scale(1.4);">
@@ -1158,6 +1178,9 @@ input[type="range"]::-moz-range-thumb {
       <input type="range" id="setVolume" min="0" max="100" value="50" oninput="onVolumeInput()" onchange="updateSettings()" style="width:100%;">
     </div>
     <button class="btn btn-secondary btn-small" onclick="playBeep()" style="width:100%;">🔊 Ton testen</button>
+
+    <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
+    <button class="btn btn-secondary btn-small" onclick="openFeedback()" style="width:100%;">💬 Feedback geben</button>
 
     <div style="height:16px"></div>
     <div style="border-top:1px solid var(--border); padding-top:14px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim);">
@@ -1198,6 +1221,36 @@ input[type="range"]::-moz-range-thumb {
     </div>
     <div style="height:14px"></div>
     <button class="btn btn-secondary" onclick="closePlansModal()">Schließen</button>
+  </div>
+</div>
+
+<!-- FEEDBACK MODAL -->
+<div class="modal-bg" id="feedbackModal">
+  <div class="modal">
+    <div class="modal-title">💬 Feedback</div>
+    <div style="font-size:13px; color:var(--text-dim); margin-bottom:14px;">
+      Was fehlt dir, was würdest du verbessern? Jede Rückmeldung hilft.
+    </div>
+    <div class="input-group">
+      <label>Art</label>
+      <select id="fbCategory">
+        <option value="Wunsch/Feature">Wunsch / Feature-Idee</option>
+        <option value="Fehler/Bug">Fehler / Bug</option>
+        <option value="Bedienung/UX">Bedienung / verständlich?</option>
+        <option value="Lob">Lob / Allgemein</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label>Deine Nachricht</label>
+      <textarea id="fbMessage" rows="4" placeholder="z.B. Ich würde mir wünschen, dass…" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px; color:var(--text); font-family:'Manrope',sans-serif; font-size:15px; resize:vertical;"></textarea>
+    </div>
+    <div class="input-group">
+      <label>Name (optional)</label>
+      <input type="text" id="fbName" placeholder="anonym">
+    </div>
+    <button class="btn" onclick="submitFeedback()">Senden</button>
+    <div style="height:8px"></div>
+    <button class="btn btn-secondary" onclick="closeFeedback()">Abbrechen</button>
   </div>
 </div>
 
@@ -1426,6 +1479,18 @@ const FOOD_DB = [
    ================================================================= */
 const STORAGE_KEY = "ironlog_v1";
 
+/* --- FEEDBACK-KONFIGURATION ---------------------------------------
+   Für zentrales Sammeln von Feedback (kein eigener Server nötig):
+   1. Auf https://web3forms.com mit deiner E-Mail einen kostenlosen
+      "Access Key" holen (keine Anmeldung nötig, Key kommt per Mail).
+   2. Den Key unten bei accessKey eintragen.
+   Dann landen alle Rückmeldungen in deinem Postfach.
+   Ohne Key: Fallback auf E-Mail (feedbackEmail) bzw. nur lokale Speicherung. */
+const FEEDBACK_CONFIG = {
+  accessKey: "454b6fdb-207d-45e2-9c37-42e744623941",   // Web3Forms Access Key
+  feedbackEmail: ""              // optional: E-Mail für mailto-Fallback
+};
+
 let state = {
   schemaVersion: 2,
   currentDayIdx: 0,               // Index in den Tagen des aktiven Plans
@@ -1465,6 +1530,7 @@ function normalizeState() {
   if (!state.notes || typeof state.notes !== 'object') state.notes = {};
   if (!Array.isArray(state.customFoods)) state.customFoods = [];
   if (!Array.isArray(state.mealGroups)) state.mealGroups = [];
+  if (!Array.isArray(state.feedbackLog)) state.feedbackLog = [];
   if (!state.settings || typeof state.settings !== 'object') state.settings = {};
   if (typeof state.settings.volume !== 'number') state.settings.volume = 0.5;
   if (typeof state.settings.soundEnabled !== 'boolean') state.settings.soundEnabled = true;
@@ -2004,6 +2070,72 @@ function updateSettings() {
   state.settings.volume = document.getElementById('setVolume').value / 100;
   saveState();
 }
+
+/* =================================================================
+   FEEDBACK
+   ================================================================= */
+function openFeedback() {
+  closeSettings();
+  document.getElementById('fbMessage').value = '';
+  document.getElementById('fbName').value = '';
+  document.getElementById('fbCategory').value = 'Wunsch/Feature';
+  document.getElementById('feedbackModal').classList.add('active');
+  setTimeout(() => document.getElementById('fbMessage').focus(), 100);
+}
+function closeFeedback() {
+  document.getElementById('feedbackModal').classList.remove('active');
+}
+async function submitFeedback() {
+  const message = document.getElementById('fbMessage').value.trim();
+  if (!message) { showToast("Bitte eine Nachricht eingeben", true); return; }
+  const category = document.getElementById('fbCategory').value;
+  const name = document.getElementById('fbName').value.trim() || 'anonym';
+  const entry = { ts: Date.now(), date: todayStr(), category, name, message };
+
+  // immer lokal sichern (Backup / Verlauf)
+  state.feedbackLog.push(entry);
+  saveState();
+
+  // 1) Versand über Web3Forms, falls Key konfiguriert
+  if (FEEDBACK_CONFIG.accessKey) {
+    try {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          access_key: FEEDBACK_CONFIG.accessKey,
+          subject: `IRON.LOG Feedback: ${category}`,
+          from_name: name,
+          category, message,
+          app: 'IRON.LOG'
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        closeFeedback();
+        showToast("✓ Danke für dein Feedback!");
+        return;
+      }
+      throw new Error('send failed');
+    } catch (err) {
+      // weiter zum Fallback
+    }
+  }
+
+  // 2) Fallback: E-Mail (mailto), falls konfiguriert
+  if (FEEDBACK_CONFIG.feedbackEmail) {
+    const subject = encodeURIComponent(`IRON.LOG Feedback: ${category}`);
+    const body = encodeURIComponent(`Kategorie: ${category}\nName: ${name}\n\n${message}`);
+    closeFeedback();
+    window.location.href = `mailto:${FEEDBACK_CONFIG.feedbackEmail}?subject=${subject}&body=${body}`;
+    showToast("E-Mail wird geöffnet…");
+    return;
+  }
+
+  // 3) Kein Versandweg konfiguriert -> nur lokal gespeichert
+  closeFeedback();
+  showToast("Gespeichert (lokal). Versand noch nicht eingerichtet.");
+}
 function saveProfile() {
   const p = {
     name: document.getElementById('pfName').value.trim(),
@@ -2319,7 +2451,7 @@ function renderNutrition() {
     <div class="day-tabs" style="margin-bottom:14px;">
       ${MEAL_PLAN.map((d,i) => `<div class="day-tab${i===state.selectedMealDay?' active':''}" onclick="selectMealDay(${i})">T${i+1}</div>`).join('')}
     </div>
-    <div style="font-family:'Bebas Neue'; font-size:20px; margin-bottom:4px;">${day.day}</div>
+    <div style="font-family:'Sora'; font-size:20px; margin-bottom:4px;">${day.day}</div>
     <div class="mono" style="font-size:11px; color: var(--accent); margin-bottom:14px;">~${day.kcal} kcal</div>
     ${day.meals.map(m => `
       <div class="meal">
@@ -2651,11 +2783,11 @@ function renderWeight() {
         datasets: [{
           label: 'Körpergewicht (kg)',
           data: wts.map(w => w.kg),
-          borderColor: '#ff5722',
-          backgroundColor: 'rgba(255,87,34,0.1)',
+          borderColor: '#5b8def',
+          backgroundColor: 'rgba(91,141,239,0.14)',
           tension: 0.3,
           pointRadius: 4,
-          pointBackgroundColor: '#ff5722',
+          pointBackgroundColor: '#5b8def',
           fill: true
         }]
       },
@@ -2710,7 +2842,7 @@ function renderProgress() {
         datasets: [{
           label: 'Volumen (kg)',
           data: weeks.map(w => byWeek[w]),
-          backgroundColor: '#ff5722',
+          backgroundColor: '#5b8def',
           borderRadius: 4
         }]
       },
@@ -2719,7 +2851,7 @@ function renderProgress() {
   } else {
     const ctx = document.getElementById('volumeChart').getContext('2d');
     ctx.clearRect(0,0,400,200);
-    ctx.fillStyle = '#555';
+    ctx.fillStyle = '#6a727c';
     ctx.font = '14px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Noch keine Trainings absolviert', 200, 100);
@@ -2789,8 +2921,8 @@ function renderStrengthChart() {
       datasets: [{
         label: 'e1RM (kg)',
         data: data.map(d => d.val),
-        borderColor: '#ff5722',
-        backgroundColor: 'rgba(255,87,34,0.1)',
+        borderColor: '#5b8def',
+        backgroundColor: 'rgba(91,141,239,0.14)',
         tension: 0.3,
         pointRadius: 4,
         fill: true
@@ -2809,12 +2941,12 @@ function chartOpts() {
     },
     scales: {
       x: {
-        ticks: { color: '#8a8a8a', font: { family: 'JetBrains Mono', size: 10 } },
-        grid: { color: '#262626' }
+        ticks: { color: '#9099a3', font: { family: 'JetBrains Mono', size: 10 } },
+        grid: { color: '#252b33' }
       },
       y: {
-        ticks: { color: '#8a8a8a', font: { family: 'JetBrains Mono', size: 10 } },
-        grid: { color: '#262626' }
+        ticks: { color: '#9099a3', font: { family: 'JetBrains Mono', size: 10 } },
+        grid: { color: '#252b33' }
       }
     }
   };
