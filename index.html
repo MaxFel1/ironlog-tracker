@@ -762,6 +762,42 @@ input[type="range"]::-moz-range-thumb {
 /* Hide scrollbar */
 ::-webkit-scrollbar { display: none; }
 * { scrollbar-width: none; }
+
+/* DATE BAR (Ernährung) */
+.date-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.date-bar input[type="date"] {
+  flex: 1;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: 'Manrope', sans-serif;
+  font-size: 15px;
+}
+.date-bar input[type="date"]:focus { outline: none; border-color: var(--accent); }
+.date-bar input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); }
+#nutTodayBtn { white-space: nowrap; }
+#nutTodayBtn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* MEAL PLAN 7-DAY GRID (kein horizontales Sliden) */
+.meal-day-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  margin-bottom: 16px;
+}
+.meal-day-grid .day-tab {
+  padding: 9px 0;
+  text-align: center;
+  border-radius: 10px;
+  font-size: 12px;
+}
 </style>
 </head>
 
@@ -838,6 +874,11 @@ input[type="range"]::-moz-range-thumb {
   <h1 class="view-title">ERNÄHRUNG</h1>
   <p class="view-subtitle" id="nutSubtitle">— kcal</p>
 
+  <div class="date-bar">
+    <input type="date" id="nutDate" onchange="onNutDateChange()">
+    <button class="btn-small btn-ghost" id="nutTodayBtn" onclick="nutritionToToday()">Heute</button>
+  </div>
+
   <div class="macro-bar">
     <div class="macro">
       <div class="macro-label">kcal</div>
@@ -869,12 +910,14 @@ input[type="range"]::-moz-range-thumb {
   <div style="height:8px"></div>
   <button class="btn btn-secondary" onclick="startScan()">📷 Barcode scannen</button>
   <div style="height:8px"></div>
+  <button class="btn btn-secondary" onclick="openManual()">✏️ Mahlzeit manuell (Makros)</button>
+  <div style="height:8px"></div>
   <button class="btn btn-secondary" onclick="openGroupsModal()">📦 Mahlzeiten-Gruppen</button>
   <div style="height:14px"></div>
 
   <div class="card">
     <div class="card-header">
-      <div class="card-title">Heute gegessen</div>
+      <div class="card-title" id="todayFoodTitle">Heute gegessen</div>
       <div style="display:flex; gap:6px;">
         <button class="btn btn-small btn-ghost" onclick="saveTodayAsGroup()">Als Gruppe</button>
         <button class="btn btn-small btn-ghost" onclick="clearTodayNutrition()">Reset</button>
@@ -1070,6 +1113,52 @@ input[type="range"]::-moz-range-thumb {
     <button class="btn" onclick="saveEditFood()">✓ Speichern</button>
     <div style="height:8px"></div>
     <button class="btn btn-secondary" onclick="closeEditFood()">Abbrechen</button>
+  </div>
+</div>
+
+<!-- MANUAL MACRO MODAL -->
+<div class="modal-bg" id="manualModal">
+  <div class="modal">
+    <div class="modal-title" id="manualTitle">Mahlzeit manuell</div>
+    <div style="font-size:13px; color:var(--text-dim); margin-bottom:14px;">
+      Makros schätzen (z.B. Restaurant). Die kcal werden automatisch berechnet.
+    </div>
+    <div class="input-group">
+      <label>Bezeichnung</label>
+      <input type="text" id="manName" placeholder="z.B. Essen beim Italiener">
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+      <div class="input-group">
+        <label>Protein (g)</label>
+        <input type="number" id="manP" inputmode="decimal" placeholder="0" oninput="updateManualPreview()">
+      </div>
+      <div class="input-group">
+        <label>Fett (g)</label>
+        <input type="number" id="manF" inputmode="decimal" placeholder="0" oninput="updateManualPreview()">
+      </div>
+      <div class="input-group">
+        <label>KH (g)</label>
+        <input type="number" id="manC" inputmode="decimal" placeholder="0" oninput="updateManualPreview()">
+      </div>
+    </div>
+    <div class="input-group">
+      <label>Mahlzeit</label>
+      <select id="manMeal">
+        <option value="Frühstück">Frühstück</option>
+        <option value="Snack 1">Snack 1</option>
+        <option value="Mittagessen">Mittagessen</option>
+        <option value="Pre-Workout">Pre-Workout</option>
+        <option value="Abendessen">Abendessen</option>
+        <option value="Snack 2">Snack 2</option>
+      </select>
+    </div>
+    <div style="text-align:center; background:var(--accent-soft); border-radius:12px; padding:12px; margin-bottom:14px;">
+      <div style="font-size:11px; color:var(--text-dim); font-weight:600;">VORSCHAU</div>
+      <div class="mono" id="manKcalPreview" style="font-family:'Sora',sans-serif; font-weight:700; font-size:26px; color:var(--accent);">0 kcal</div>
+    </div>
+    <button class="btn" onclick="addManual()">+ Hinzufügen</button>
+    <div style="height:8px"></div>
+    <button class="btn btn-secondary" onclick="closeManual()">Abbrechen</button>
   </div>
 </div>
 
@@ -2186,8 +2275,8 @@ function renderMealGroups() {
   }).join('');
 }
 function saveTodayAsGroup() {
-  const todayN = state.nutrition[todayStr()] || [];
-  if (!todayN.length) { showToast("Heute noch nichts eingetragen", true); return; }
+  const todayN = state.nutrition[activeDate()] || [];
+  if (!todayN.length) { showToast("An diesem Tag noch nichts eingetragen", true); return; }
   document.getElementById('saveGroupName').value = '';
   renderSaveGroupList(todayN);
   document.getElementById('saveGroupModal').classList.add('active');
@@ -2203,7 +2292,7 @@ function renderSaveGroupList(todayN, checkedDefault=true) {
       ${rows.map(({it, i}) => `
         <label style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; margin-bottom:5px;">
           <input type="checkbox" class="grp-chk" value="${i}" ${checkedDefault?'checked':''} style="width:auto; transform:scale(1.3);">
-          <span style="flex:1; font-size:13px;">${it.name} <span style="color:var(--text-faint)">${it.amount}g</span></span>
+          <span style="flex:1; font-size:13px;">${it.name} <span style="color:var(--text-faint)">${it.manual ? 'manuell' : it.amount + 'g'}</span></span>
           <span class="mono" style="font-size:11px; color:var(--text-dim);">${Math.round(it.kcal)} kcal</span>
         </label>
       `).join('')}
@@ -2219,12 +2308,12 @@ function closeSaveGroupModal() {
 function confirmSaveGroup() {
   const name = document.getElementById('saveGroupName').value.trim();
   if (!name) { showToast("Bitte einen Namen eingeben", true); return; }
-  const todayN = state.nutrition[todayStr()] || [];
+  const todayN = state.nutrition[activeDate()] || [];
   const selectedIdx = [...document.querySelectorAll('#saveGroupList .grp-chk:checked')].map(c => parseInt(c.value));
   if (!selectedIdx.length) { showToast("Nichts ausgewählt", true); return; }
   const items = selectedIdx.map(i => {
     const it = todayN[i];
-    return { name: it.name, amount: it.amount, kcal: it.kcal, p: it.p, f: it.f, c: it.c, meal: it.meal, barcode: it.barcode || null };
+    return { name: it.name, amount: it.amount, manual: it.manual || false, kcal: it.kcal, p: it.p, f: it.f, c: it.c, meal: it.meal, barcode: it.barcode || null };
   });
   state.mealGroups.push({ id: 'g' + Date.now(), name, items });
   saveState();
@@ -2234,7 +2323,7 @@ function confirmSaveGroup() {
 function applyGroup(id) {
   const g = state.mealGroups.find(x => x.id === id);
   if (!g) return;
-  const today = todayStr();
+  const today = activeDate();
   if (!state.nutrition[today]) state.nutrition[today] = [];
   g.items.forEach(it => {
     state.nutrition[today].push({ ...it, time: Date.now() });
@@ -2383,13 +2472,33 @@ function exportActivePlan() {
 /* =================================================================
    NUTRITION VIEW
    ================================================================= */
+let selectedDate = todayStr();             // gewählter Ernährungs-Tag (Laufzeit)
+function activeDate() { return selectedDate; }
+function onNutDateChange() {
+  const v = document.getElementById('nutDate').value;
+  if (v) selectedDate = v;
+  renderNutrition();
+}
+function nutritionToToday() {
+  selectedDate = todayStr();
+  renderNutrition();
+}
+
 function renderNutrition() {
   const T = state.targets;
-  const todayN = state.nutrition[todayStr()] || [];
+  const dateKey = activeDate();
+  const todayN = state.nutrition[dateKey] || [];
   const kcal = todayN.reduce((s,x) => s + x.kcal, 0);
   const p = todayN.reduce((s,x) => s + x.p, 0);
   const f = todayN.reduce((s,x) => s + x.f, 0);
   const c = todayN.reduce((s,x) => s + x.c, 0);
+
+  // Datum-UI
+  const dateInput = document.getElementById('nutDate');
+  if (dateInput) dateInput.value = dateKey;
+  const isToday = dateKey === todayStr();
+  document.getElementById('nutTodayBtn').classList.toggle('active', isToday);
+  document.getElementById('todayFoodTitle').textContent = isToday ? 'Heute gegessen' : ('Gegessen · ' + fmtDate(dateKey));
 
   document.getElementById('nutKcal').textContent = Math.round(kcal);
   document.getElementById('nutProt').textContent = Math.round(p);
@@ -2411,7 +2520,7 @@ function renderNutrition() {
 
   renderMealGroups();
 
-  // Today food list grouped by meal
+  // Food list grouped by meal
   const list = document.getElementById('todayFoodList');
   if (todayN.length === 0) {
     list.innerHTML = '<div class="empty"><div class="empty-icon">🍽</div>Noch nichts eingetragen</div>';
@@ -2431,7 +2540,7 @@ function renderNutrition() {
           </div>
           ${items.map(it => `
             <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:13px;">
-              <div>${it.name} <span style="color:var(--text-faint)">${it.amount}g</span></div>
+              <div>${it.name} <span style="color:var(--text-faint)">${it.manual ? '✏️ manuell' : (it.amount + 'g')}</span></div>
               <div style="display:flex; gap:6px; align-items:center;">
                 <span class="mono" style="font-size:11px; color: var(--text-dim);">${Math.round(it.kcal)}</span>
                 <button class="btn-small btn-ghost" style="padding:4px 8px; font-family:sans-serif; font-size:13px;" onclick="editFood(${it.idx})">✎</button>
@@ -2444,14 +2553,14 @@ function renderNutrition() {
     }).join('');
   }
 
-  // Meal plan
+  // Meal plan (7-Tage-Raster, kein Sliden)
   const planList = document.getElementById('mealPlan');
   const day = MEAL_PLAN[state.selectedMealDay];
   planList.innerHTML = `
-    <div class="day-tabs" style="margin-bottom:14px;">
-      ${MEAL_PLAN.map((d,i) => `<div class="day-tab${i===state.selectedMealDay?' active':''}" onclick="selectMealDay(${i})">T${i+1}</div>`).join('')}
+    <div class="meal-day-grid">
+      ${MEAL_PLAN.map((d,i) => `<div class="day-tab${i===state.selectedMealDay?' active':''}" onclick="selectMealDay(${i})">${i+1}</div>`).join('')}
     </div>
-    <div style="font-family:'Sora'; font-size:20px; margin-bottom:4px;">${day.day}</div>
+    <div style="font-family:'Sora'; font-weight:700; font-size:18px; margin-bottom:4px;">${day.day}</div>
     <div class="mono" style="font-size:11px; color: var(--accent); margin-bottom:14px;">~${day.kcal} kcal</div>
     ${day.meals.map(m => `
       <div class="meal">
@@ -2472,7 +2581,7 @@ function selectMealDay(i) {
 }
 
 function removeFood(idx) {
-  const today = todayStr();
+  const today = activeDate();
   state.nutrition[today].splice(idx, 1);
   if (state.nutrition[today].length === 0) delete state.nutrition[today];
   saveState();
@@ -2480,16 +2589,17 @@ function removeFood(idx) {
   renderToday();
 }
 
-/* ----- Lebensmittel-Menge nachträglich bearbeiten ----- */
+/* ----- Lebensmittel nachträglich bearbeiten ----- */
 let editFoodIdx = null;
 function editFood(idx) {
-  const today = todayStr();
+  const today = activeDate();
   const it = (state.nutrition[today] || [])[idx];
   if (!it) return;
+  // Manuelle Einträge im Makro-Modal bearbeiten, sonst Mengen-Modal
+  if (it.manual) { openManual(idx); return; }
   editFoodIdx = idx;
   document.getElementById('editFoodTitle').textContent = it.name;
   document.getElementById('editFoodAmount').value = it.amount;
-  // Mahlzeit-Auswahl vorbelegen
   const sel = document.getElementById('editFoodMeal');
   if (sel) sel.value = it.meal || 'Frühstück';
   document.getElementById('editFoodModal').classList.add('active');
@@ -2501,12 +2611,11 @@ function closeEditFood() {
 }
 function saveEditFood() {
   if (editFoodIdx === null) return;
-  const today = todayStr();
+  const today = activeDate();
   const it = (state.nutrition[today] || [])[editFoodIdx];
   if (!it) { closeEditFood(); return; }
   const newAmount = parseFloat(document.getElementById('editFoodAmount').value);
   if (!newAmount || newAmount <= 0) { showToast("Ungültige Menge", true); return; }
-  // Nährwerte aus Pro-100g-Basis neu berechnen (kein Rundungsdrift)
   const per100 = {
     kcal: it.kcal / it.amount * 100,
     p: it.p / it.amount * 100,
@@ -2527,9 +2636,58 @@ function saveEditFood() {
   showToast("✓ Aktualisiert");
 }
 
+/* ----- Manuelle Makro-Eingabe (z.B. Restaurant) ----- */
+let manualEditIdx = null;   // null = neuer Eintrag, sonst Index zum Bearbeiten
+function openManual(editIdx = null) {
+  manualEditIdx = (typeof editIdx === 'number') ? editIdx : null;
+  let it = null;
+  if (manualEditIdx !== null) it = (state.nutrition[activeDate()] || [])[manualEditIdx];
+  document.getElementById('manualTitle').textContent = it ? 'Mahlzeit bearbeiten' : 'Mahlzeit manuell';
+  document.getElementById('manName').value = it ? it.name : '';
+  document.getElementById('manP').value = it ? it.p : '';
+  document.getElementById('manF').value = it ? it.f : '';
+  document.getElementById('manC').value = it ? it.c : '';
+  document.getElementById('manMeal').value = it ? (it.meal || 'Abendessen') : 'Abendessen';
+  updateManualPreview();
+  document.getElementById('manualModal').classList.add('active');
+  setTimeout(() => document.getElementById('manName').focus(), 100);
+}
+function closeManual() {
+  document.getElementById('manualModal').classList.remove('active');
+  manualEditIdx = null;
+}
+function manualKcal() {
+  const p = parseFloat(document.getElementById('manP').value) || 0;
+  const f = parseFloat(document.getElementById('manF').value) || 0;
+  const c = parseFloat(document.getElementById('manC').value) || 0;
+  return { p, f, c, kcal: Math.round(p*4 + f*9 + c*4) };
+}
+function updateManualPreview() {
+  document.getElementById('manKcalPreview').textContent = manualKcal().kcal + ' kcal';
+}
+function addManual() {
+  const { p, f, c, kcal } = manualKcal();
+  if (kcal <= 0) { showToast("Bitte Makros eingeben", true); return; }
+  const name = document.getElementById('manName').value.trim() || 'Mahlzeit (manuell)';
+  const meal = document.getElementById('manMeal').value;
+  const today = activeDate();
+  if (!state.nutrition[today]) state.nutrition[today] = [];
+  const entry = { name, manual: true, amount: null, kcal, p: +p.toFixed(1), f: +f.toFixed(1), c: +c.toFixed(1), meal, time: Date.now() };
+  if (manualEditIdx !== null && state.nutrition[today][manualEditIdx]) {
+    state.nutrition[today][manualEditIdx] = entry;
+  } else {
+    state.nutrition[today].push(entry);
+  }
+  saveState();
+  closeManual();
+  renderNutrition();
+  renderToday();
+  showToast(`+ ${kcal} kcal`);
+}
+
 function clearTodayNutrition() {
-  if (!confirm("Alle Einträge von heute löschen?")) return;
-  delete state.nutrition[todayStr()];
+  if (!confirm("Alle Einträge dieses Tages löschen?")) return;
+  delete state.nutrition[activeDate()];
   saveState();
   renderNutrition();
   renderToday();
@@ -2597,7 +2755,7 @@ function addPortion() {
   if (!amount || amount <= 0 || !pendingFood) return;
   const f = pendingFood;
   const factor = amount / 100;
-  const today = todayStr();
+  const today = activeDate();
   if (!state.nutrition[today]) state.nutrition[today] = [];
   state.nutrition[today].push({
     name: f.name,
