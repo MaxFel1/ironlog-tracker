@@ -937,32 +937,45 @@ input[type="range"]::-moz-range-thumb {
 
 <!-- WEIGHT VIEW -->
 <section class="view" id="view-weight">
-  <h1 class="view-title">KÖRPERGEWICHT</h1>
-  <p class="view-subtitle">Wöchentliches Tracking</p>
+  <h1 class="view-title">KÖRPER</h1>
+  <p class="view-subtitle">Gewicht & Bauchumfang verfolgen</p>
 
   <div class="card">
     <div class="input-group">
-      <label>Aktuelles Körpergewicht (kg)</label>
+      <label>Körpergewicht (kg)</label>
       <input type="number" step="0.1" id="weightInput" placeholder="z.B. 83.5" inputmode="decimal">
     </div>
-    <button class="btn" onclick="addWeight()">+ Eintragen</button>
+    <button class="btn" onclick="addWeight()">+ Gewicht eintragen</button>
+    <div style="height:16px"></div>
+    <div class="input-group">
+      <label>Bauchumfang (cm) — optional</label>
+      <input type="number" step="0.1" id="waistInput" placeholder="z.B. 84" inputmode="decimal">
+    </div>
+    <button class="btn btn-secondary" onclick="addWaist()">+ Umfang eintragen</button>
   </div>
 
-  <div class="card">
+  <div id="bodyEmpty"></div>
+
+  <div class="card" id="weightCard" style="display:none;">
     <div class="card-header">
-      <div class="card-title">Verlauf</div>
+      <div class="card-title">Körpergewicht</div>
       <div class="card-meta" id="weightCount">0 Einträge</div>
     </div>
     <div class="chart-container">
       <canvas id="weightChart"></canvas>
     </div>
+    <div id="weightHistory" style="margin-top:8px;"></div>
   </div>
 
-  <div class="card">
+  <div class="card" id="waistCard" style="display:none;">
     <div class="card-header">
-      <div class="card-title">Historie</div>
+      <div class="card-title">Bauchumfang</div>
+      <div class="card-meta" id="waistCount">0 Einträge</div>
     </div>
-    <div id="weightHistory"></div>
+    <div class="chart-container">
+      <canvas id="waistChart"></canvas>
+    </div>
+    <div id="waistHistory" style="margin-top:8px;"></div>
   </div>
 </section>
 
@@ -1619,6 +1632,7 @@ function normalizeState() {
   if (!state.notes || typeof state.notes !== 'object') state.notes = {};
   if (!Array.isArray(state.customFoods)) state.customFoods = [];
   if (!Array.isArray(state.mealGroups)) state.mealGroups = [];
+  if (!Array.isArray(state.waist)) state.waist = [];
   if (!Array.isArray(state.feedbackLog)) state.feedbackLog = [];
   if (!state.settings || typeof state.settings !== 'object') state.settings = {};
   if (typeof state.settings.volume !== 'number') state.settings.volume = 0.5;
@@ -1911,11 +1925,7 @@ function renderTraining() {
     list.appendChild(wrap);
   });
 
-  // Beim allerersten Anzeigen: erste Übung aufklappen
-  if (openExercises.size === 0 && plan.exercises.length > 0) {
-    openExercises.add(plan.exercises[0].id);
-    list.querySelector(`.exercise[data-exid="${plan.exercises[0].id}"]`)?.classList.add('open');
-  }
+  // Übungen starten immer eingeklappt — erst beim Antippen öffnen.
 
   // Buttons
   document.getElementById('finishWorkoutBtn').style.display =
@@ -2902,72 +2912,117 @@ function openManualBarcode(ean) {
 }
 
 /* =================================================================
-   WEIGHT VIEW
+   BODY VIEW (Gewicht + Bauchumfang)
    ================================================================= */
 let weightChartInstance = null;
+let waistChartInstance = null;
+
+function renderMetricHistory(arr, unit) {
+  return [...arr].reverse().slice(0, 12).map((row, i, a) => {
+    const val = row.val;
+    const prev = a[i+1];
+    const delta = prev ? val - prev.val : null;
+    // farbenblind-sicher: Pfeil + Vorzeichen, Farbe nur unterstützend (Blau/Grün, kein Rot/Grün-Paar)
+    const deltaStr = delta !== null
+      ? `<span style="color:${delta > 0.05 ? 'var(--success)' : delta < -0.05 ? 'var(--accent)' : 'var(--text-dim)'}; font-size:11px; margin-left:8px;">${delta>=0?'↑ +':'↓ '}${delta.toFixed(1)}</span>`
+      : '';
+    return `
+      <div class="history-item">
+        <div class="history-date">${fmtDate(row.date)}</div>
+        <div class="history-value">${val.toFixed(1)} ${unit}${deltaStr}</div>
+      </div>`;
+  }).join('');
+}
+
+function buildLineChart(canvasId, existing, rows, label) {
+  if (existing) existing.destroy();
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  return new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: rows.map(r => fmtDateShort(r.date)),
+      datasets: [{
+        label,
+        data: rows.map(r => r.val),
+        borderColor: '#5b8def',
+        backgroundColor: 'rgba(91,141,239,0.14)',
+        tension: 0.3,
+        pointRadius: 4,
+        pointBackgroundColor: '#5b8def',
+        fill: true
+      }]
+    },
+    options: chartOpts()
+  });
+}
 
 function renderWeight() {
   const wts = state.weights;
-  document.getElementById('weightCount').textContent = `${wts.length} Einträge`;
+  const wsts = state.waist;
 
-  // History
-  const hist = document.getElementById('weightHistory');
+  // Globaler Leerstand, wenn gar nichts erfasst wurde
+  document.getElementById('bodyEmpty').innerHTML = (wts.length === 0 && wsts.length === 0)
+    ? '<div class="card"><div class="empty"><div class="empty-icon">📭</div>Bisher keine Daten eingegeben.<br>Trag oben dein erstes Körpergewicht oder deinen Bauchumfang ein.</div></div>'
+    : '';
+
+  // --- Körpergewicht (Karte nur bei Daten) ---
+  const wCard = document.getElementById('weightCard');
   if (wts.length === 0) {
-    hist.innerHTML = '<div class="empty"><div class="empty-icon">⚖</div>Noch keine Wiegung</div>';
+    wCard.style.display = 'none';
+    if (weightChartInstance) { weightChartInstance.destroy(); weightChartInstance = null; }
   } else {
-    hist.innerHTML = [...wts].reverse().slice(0, 12).map((w, i, arr) => {
-      const prev = arr[i+1];
-      const delta = prev ? w.kg - prev.kg : null;
-      const deltaStr = delta !== null
-        ? `<span style="color: ${delta > 0.05 ? 'var(--success)' : delta < -0.05 ? 'var(--danger)' : 'var(--text-dim)'}; font-size:11px; margin-left:8px;">${delta>=0?'+':''}${delta.toFixed(1)}</span>`
-        : '';
-      return `
-        <div class="history-item">
-          <div class="history-date">${fmtDate(w.date)}</div>
-          <div class="history-value">${w.kg.toFixed(1)} kg${deltaStr}</div>
-        </div>
-      `;
-    }).join('');
+    wCard.style.display = 'block';
+    document.getElementById('weightCount').textContent = `${wts.length} Einträge`;
+    document.getElementById('weightHistory').innerHTML =
+      renderMetricHistory(wts.map(w => ({ date: w.date, val: w.kg })), 'kg');
+    weightChartInstance = buildLineChart('weightChart', weightChartInstance,
+      wts.map(w => ({ date: w.date, val: w.kg })), 'Körpergewicht (kg)');
   }
 
-  // Chart
-  if (weightChartInstance) weightChartInstance.destroy();
-  if (wts.length > 0) {
-    const ctx = document.getElementById('weightChart').getContext('2d');
-    weightChartInstance = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: wts.map(w => fmtDateShort(w.date)),
-        datasets: [{
-          label: 'Körpergewicht (kg)',
-          data: wts.map(w => w.kg),
-          borderColor: '#5b8def',
-          backgroundColor: 'rgba(91,141,239,0.14)',
-          tension: 0.3,
-          pointRadius: 4,
-          pointBackgroundColor: '#5b8def',
-          fill: true
-        }]
-      },
-      options: chartOpts()
-    });
+  // --- Bauchumfang (Karte nur bei Daten) ---
+  const cCard = document.getElementById('waistCard');
+  if (wsts.length === 0) {
+    cCard.style.display = 'none';
+    if (waistChartInstance) { waistChartInstance.destroy(); waistChartInstance = null; }
+  } else {
+    cCard.style.display = 'block';
+    document.getElementById('waistCount').textContent = `${wsts.length} Einträge`;
+    document.getElementById('waistHistory').innerHTML =
+      renderMetricHistory(wsts.map(w => ({ date: w.date, val: w.cm })), 'cm');
+    waistChartInstance = buildLineChart('waistChart', waistChartInstance,
+      wsts.map(w => ({ date: w.date, val: w.cm })), 'Bauchumfang (cm)');
   }
 }
 
 function addWeight() {
-  const v = parseFloat(document.getElementById('weightInput').value);
+  const el = document.getElementById('weightInput');
+  const v = parseFloat(el.value);
   if (!v || v < 30 || v > 250) {
     showToast("Bitte gültiges Gewicht eingeben", true);
     return;
   }
   state.weights.push({ date: todayStr(), kg: v, timestamp: Date.now() });
-  // sort by date
   state.weights.sort((a,b) => a.date.localeCompare(b.date));
   saveState();
-  document.getElementById('weightInput').value = '';
+  el.value = '';
   showToast(`✓ ${v} kg eingetragen`);
   renderWeight();
   renderToday();
+}
+
+function addWaist() {
+  const el = document.getElementById('waistInput');
+  const v = parseFloat(el.value);
+  if (!v || v < 40 || v > 200) {
+    showToast("Bitte gültigen Umfang eingeben (40–200 cm)", true);
+    return;
+  }
+  state.waist.push({ date: todayStr(), cm: v, timestamp: Date.now() });
+  state.waist.sort((a,b) => a.date.localeCompare(b.date));
+  saveState();
+  el.value = '';
+  showToast(`✓ ${v} cm eingetragen`);
+  renderWeight();
 }
 
 /* =================================================================
