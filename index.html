@@ -1313,16 +1313,36 @@ input[type="range"]::-moz-range-thumb {
     <div class="modal-title">Trainingspläne</div>
     <div id="plansList"></div>
     <div style="height:12px"></div>
+    <button class="btn btn-small" onclick="openAiPlanModal()" style="width:100%;">🧠 Plan mit KI erstellen</button>
+    <div style="height:8px"></div>
     <button class="btn btn-secondary btn-small" onclick="document.getElementById('planImportFile').click()" style="width:100%;">⬆ Plan importieren (JSON)</button>
     <input type="file" id="planImportFile" accept=".json" style="display:none" onchange="importPlan(event)">
     <div style="height:8px"></div>
     <button class="btn btn-secondary btn-small" onclick="exportActivePlan()" style="width:100%;">⬇ Aktiven Plan exportieren</button>
-    <div style="height:8px"></div>
-    <div style="font-size:11px; color:var(--text-faint); line-height:1.5;">
-      Tipp: Mit der Datei PLAN-FORMAT.md kann dir jede KI einen Plan im richtigen Format erzeugen, den du hier importierst.
-    </div>
     <div style="height:14px"></div>
     <button class="btn btn-secondary" onclick="closePlansModal()">Schließen</button>
+  </div>
+</div>
+
+<!-- KI-PLAN MODAL -->
+<div class="modal-bg" id="aiPlanModal">
+  <div class="modal">
+    <div class="modal-title">🧠 Plan mit KI erstellen</div>
+    <div style="font-size:13px; color:var(--text-dim); margin-bottom:14px; line-height:1.6;">
+      <b style="color:var(--text)">1.</b> Prompt kopieren &nbsp;
+      <b style="color:var(--text)">2.</b> in eine KI (ChatGPT, Claude…) einfügen, die <code>[…]</code>-Stellen ausfüllen &nbsp;
+      <b style="color:var(--text)">3.</b> die JSON-Antwort als <code>.json</code> speichern &nbsp;
+      <b style="color:var(--text)">4.</b> hier über „Plan importieren" laden.
+    </div>
+    <textarea id="aiPromptText" readonly rows="10" style="width:100%; background:var(--bg-inset); border:1px solid var(--border); border-radius:12px; padding:12px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.5; resize:vertical;"></textarea>
+    <div style="height:10px"></div>
+    <button class="btn" onclick="copyAiPrompt()">📋 Prompt kopieren</button>
+    <div style="height:8px"></div>
+    <div style="font-size:11px; color:var(--text-faint); line-height:1.5;">
+      Tipp: Wenn die KI Text drumherum ausgibt, sag ihr „gib mir nur das reine JSON, ohne Erklärung".
+    </div>
+    <div style="height:14px"></div>
+    <button class="btn btn-secondary" onclick="closeAiPlanModal()">Schließen</button>
   </div>
 </div>
 
@@ -2361,6 +2381,68 @@ function openPlansModal() {
 }
 function closePlansModal() {
   document.getElementById('plansModal').classList.remove('active');
+}
+
+/* ----- Plan per KI erstellen: fertiger Prompt zum Kopieren ----- */
+const AI_PLAN_PROMPT = `Erstelle mir einen Trainingsplan.
+- Ziel: [z.B. Muskelaufbau]
+- Tage pro Woche: [z.B. 4]
+- Split: [z.B. Upper/Lower]
+- Equipment: [z.B. komplettes Gym]
+- Dauer pro Einheit: [z.B. 60 Min]
+- Level: [Anfänger / Fortgeschritten]
+- Besonderheiten: [z.B. Schulter schonen]
+
+Gib NUR gültiges JSON in genau diesem Format aus (keine Erklärung, kein Text drumherum):
+
+{
+  "type": "ironlog-plan",
+  "schemaVersion": 2,
+  "name": "...",
+  "days": [
+    {
+      "code": "UA",
+      "name": "Upper A",
+      "weekday": "Mo",
+      "exercises": [
+        { "name": "Bankdrücken", "sets": 4, "reps": "6-8", "rpe": "8", "rest": 180, "cues": "...", "alt": "..." }
+      ]
+    }
+  ]
+}
+
+Regeln: "type" muss exakt "ironlog-plan" sein. "rest" in Sekunden als Zahl.
+"reps" und "rpe" als Text. Pro Tag 4-7 Übungen. Gib nur das JSON aus, sonst nichts.`;
+
+function openAiPlanModal() {
+  closePlansModal();
+  document.getElementById('aiPromptText').value = AI_PLAN_PROMPT;
+  document.getElementById('aiPlanModal').classList.add('active');
+}
+function closeAiPlanModal() {
+  document.getElementById('aiPlanModal').classList.remove('active');
+}
+async function copyAiPrompt() {
+  const text = AI_PLAN_PROMPT;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      throw new Error('no clipboard api');
+    }
+    showToast("✓ Prompt kopiert");
+  } catch (e) {
+    // Fallback: Textfeld markieren + execCommand
+    const ta = document.getElementById('aiPromptText');
+    ta.focus();
+    ta.select();
+    try {
+      const ok = document.execCommand('copy');
+      showToast(ok ? "✓ Prompt kopiert" : "Bitte manuell markieren & kopieren", !ok);
+    } catch (err) {
+      showToast("Bitte manuell markieren & kopieren", true);
+    }
+  }
 }
 function renderPlansList() {
   const el = document.getElementById('plansList');
