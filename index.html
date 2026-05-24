@@ -80,7 +80,33 @@ header .logo {
   font-size: 19px;
   letter-spacing: -0.01em;
 }
+header .brand { display: flex; align-items: center; gap: 10px; }
+header .brand-mark { width: 36px; height: 36px; flex-shrink: 0; display: block; }
 header .logo .accent { color: var(--accent); }
+header .logo .plate {
+  display: inline-block;
+  width: 0.33em;
+  height: 0.33em;
+  margin: 0 0.05em;
+  border-radius: 50%;
+  background: var(--accent);
+  position: relative;
+  vertical-align: baseline;
+}
+header .logo .plate::after {
+  content: '';
+  position: absolute;
+  inset: 34%;
+  border-radius: 50%;
+  background: var(--bg);
+}
+header .logo-tag {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  margin-top: 1px;
+}
 header .date {
   font-size: 12px;
   color: var(--text-dim);
@@ -804,7 +830,22 @@ input[type="range"]::-moz-range-thumb {
 <body>
 
 <header>
-  <div class="logo">IRON<span class="accent">.</span>LOG</div>
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 512 512" aria-hidden="true">
+      <rect width="512" height="512" rx="116" fill="#171b21"/>
+      <rect x="206" y="244" width="100" height="24" rx="12" fill="#eef1f5"/>
+      <rect x="180" y="186" width="34" height="140" rx="14" fill="#5b8def"/>
+      <rect x="298" y="186" width="34" height="140" rx="14" fill="#5b8def"/>
+      <rect x="146" y="208" width="26" height="96" rx="12" fill="#5b8def"/>
+      <rect x="340" y="208" width="26" height="96" rx="12" fill="#5b8def"/>
+      <rect x="118" y="226" width="18" height="60" rx="9" fill="#eef1f5"/>
+      <rect x="376" y="226" width="18" height="60" rx="9" fill="#eef1f5"/>
+    </svg>
+    <div class="brand-text">
+      <div class="logo">IRON<span class="plate" aria-hidden="true"></span>LOG</div>
+      <div class="logo-tag">Plan · Train · Track</div>
+    </div>
+  </div>
   <div style="display:flex; align-items:center; gap:14px;">
     <div class="date" id="todayDate">—</div>
     <button onclick="openSettings()" style="background:none; border:none; color:var(--text-dim); font-size:20px; cursor:pointer; padding:0;">⚙</button>
