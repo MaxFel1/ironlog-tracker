@@ -1469,7 +1469,7 @@ input[type="range"]::-moz-range-thumb {
         <option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option>
       </select>
     </div>
-    <div class="input-group">
+    <div class="input-group" id="grpSplit">
       <label>Split</label>
       <select id="aiSplit" onchange="refreshAiPrompt()">
         <option>Automatisch (KI wählt passend)</option>
@@ -1503,7 +1503,7 @@ input[type="range"]::-moz-range-thumb {
         <option>Anfänger</option><option selected>Fortgeschritten</option><option>Profi</option>
       </select>
     </div>
-    <div class="input-group">
+    <div class="input-group" id="grpStyle">
       <label>Bevorzugter Trainingsstil</label>
       <select id="aiStyle" onchange="refreshAiPrompt()">
         <option>Mix aus freien Gewichten & Geräten</option>
@@ -2908,25 +2908,28 @@ function buildAiPrompt() {
   const splitLine = split.startsWith('Automatisch')
     ? 'Split: wähle einen sinnvollen Split passend zur Tagesanzahl'
     : `Split: ${split}`;
+  const isHyrox = goal.includes('HYROX');
+  const bodyweight = equip === 'Nur Körpergewicht';
+  const showSplit = !isHyrox;
+  const showStyle = !isHyrox && !bodyweight;
   let extra = '';
   if (formats === 'KI entscheidet')
     extra += `\n- Kondi-/WOD-Formate: nach deinem Ermessen einbauen, wo sinnvoll`;
   else if (formats.startsWith('Gezielt'))
     extra += `\n- Kondi-/WOD-Formate: gezielt einbauen — mindestens einen Tag als AMRAP / EMOM / For Time / Runden gestalten (type cardio/functional + passende metrics + format/timeCap/rounds)`;
-  if (goal.includes('HYROX'))
+  if (isHyrox)
     extra += `\n- HYROX-Orientierung: Laufen mit funktionellen Stationen kombinieren (z.B. SkiErg, Sled Push/Pull, Rudern, Farmers Carry, Wall Balls, Burpees, Lunges); functional/cardio-Übungen mit passenden metrics`;
+  const tl = [`- Ziel: ${goal}`, `- Tage pro Woche: ${days}`];
+  if (showSplit) tl.push(`- ${splitLine}`);
+  tl.push(`- Equipment: ${equip}`, `- Dauer pro Einheit: ${dur}`, `- Level: ${level}`);
+  if (showStyle) tl.push(`- Trainingsstil: ${style}`);
+  tl.push(`- Kardio: ${cardio}`);
+  const trainingBlock = tl.join('\n') + extra + (special ? `\n- Besonderheiten: ${special}` : '');
 
   return `Erstelle mir einen Trainingsplan UND passende Ernährungsvorschläge.
 
 TRAINING:
-- Ziel: ${goal}
-- Tage pro Woche: ${days}
-- ${splitLine}
-- Equipment: ${equip}
-- Dauer pro Einheit: ${dur}
-- Level: ${level}
-- Trainingsstil: ${style}
-- Kardio: ${cardio}${extra}${special ? `\n- Besonderheiten: ${special}` : ''}
+${trainingBlock}
 
 ERNÄHRUNG — richte die Mahlzeiten an diesen Zielwerten aus:
 ${nutritionTargets}
@@ -2971,7 +2974,17 @@ Pro Trainingstag 4-7 Übungen. Pro Ernährungstag 4-6 Mahlzeiten, deren kcal-Sum
 Gib nur das JSON aus, sonst nichts.`;
 }
 
+function refreshAiVisibility() {
+  const goal = aiVal('aiGoal', '');
+  const isHyrox = goal.includes('HYROX');
+  const bodyweight = aiVal('aiEquipment', '') === 'Nur Körpergewicht';
+  const gSplit = document.getElementById('grpSplit');
+  const gStyle = document.getElementById('grpStyle');
+  if (gSplit) gSplit.style.display = isHyrox ? 'none' : '';
+  if (gStyle) gStyle.style.display = (isHyrox || bodyweight) ? 'none' : '';
+}
 function refreshAiPrompt() {
+  refreshAiVisibility();
   const el = document.getElementById('aiPromptText');
   if (el) el.value = buildAiPrompt();
 }
