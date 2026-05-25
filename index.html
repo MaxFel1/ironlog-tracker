@@ -664,6 +664,20 @@ input[type="range"]::-moz-range-thumb {
   border-bottom: 1px solid var(--border);
 }
 .history-item:last-child { border-bottom: none; }
+.history-item .hist-btn {
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.history-item .hist-btn.del { color: var(--danger); }
+.history-item .hist-btn:active { background: var(--bg-elevated); }
 .history-date {
   font-size: 13px;
   color: var(--text-dim);
@@ -809,6 +823,19 @@ input[type="range"]::-moz-range-thumb {
 .date-bar input[type="date"]:focus { outline: none; border-color: var(--accent); }
 .date-bar input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); }
 #nutTodayBtn { white-space: nowrap; }
+.date-bar .day-nav {
+  flex-shrink: 0;
+  width: 42px;
+  height: 44px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--accent);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.date-bar .day-nav:active { background: var(--bg-elevated); }
 #nutTodayBtn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 /* MEAL PLAN 7-DAY GRID (kein horizontales Sliden) */
@@ -916,7 +943,9 @@ input[type="range"]::-moz-range-thumb {
   <p class="view-subtitle" id="nutSubtitle">— kcal</p>
 
   <div class="date-bar">
+    <button class="day-nav" onclick="nutShiftDay(-1)" aria-label="Vorheriger Tag">‹</button>
     <input type="date" id="nutDate" onchange="onNutDateChange()">
+    <button class="day-nav" onclick="nutShiftDay(1)" aria-label="Nächster Tag">›</button>
     <button class="btn-small btn-ghost" id="nutTodayBtn" onclick="nutritionToToday()">Heute</button>
   </div>
 
@@ -956,7 +985,7 @@ input[type="range"]::-moz-range-thumb {
   <button class="btn btn-secondary" onclick="openGroupsModal()">📦 Mahlzeiten-Gruppen</button>
   <div style="height:14px"></div>
 
-  <div class="card">
+  <div class="card" id="foodLogCard">
     <div class="card-header">
       <div class="card-title" id="todayFoodTitle">Heute gegessen</div>
       <div style="display:flex; gap:6px;">
@@ -965,6 +994,7 @@ input[type="range"]::-moz-range-thumb {
       </div>
     </div>
     <div id="todayFoodList"></div>
+    <div style="text-align:center; font-size:11px; color:var(--text-faint); margin-top:12px;">‹ wischen, um den Tag zu wechseln ›</div>
   </div>
 
   <div class="card">
@@ -1309,6 +1339,20 @@ input[type="range"]::-moz-range-thumb {
     <button class="btn btn-secondary btn-small" onclick="closeSettings(); openPlansModal();" style="width:100%;">Pläne verwalten / importieren</button>
 
     <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
+    <div style="font-family:'Sora'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Kalorien-Cycling</div>
+    <div class="input-group">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <input type="checkbox" id="setCycling" onchange="updateSettings()" style="width:auto; transform:scale(1.4);">
+        <span style="font-size:14px; color:var(--text-dim);">Mehr kcal an Trainingstagen, weniger an Ruhetagen</span>
+      </div>
+    </div>
+    <div class="input-group">
+      <label>Aufschlag am Trainingstag: <span id="bumpLabel" class="mono">250</span> kcal</label>
+      <input type="range" id="setBump" min="0" max="700" step="50" value="250" oninput="onBumpInput()" onchange="updateSettings()" style="width:100%;">
+    </div>
+    <div id="cyclingInfo" style="font-size:12px; color:var(--text-dim); line-height:1.5;"></div>
+
+    <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
     <div style="font-family:'Sora'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Signalton</div>
     <div class="input-group">
       <div style="display:flex; align-items:center; gap:12px;">
@@ -1372,8 +1416,8 @@ input[type="range"]::-moz-range-thumb {
     <div style="font-size:13px; color:var(--text-dim); margin-bottom:14px; line-height:1.6;">
       <b style="color:var(--text)">1.</b> Prompt kopieren &nbsp;
       <b style="color:var(--text)">2.</b> in eine KI (ChatGPT, Claude…) einfügen, die <code>[…]</code>-Stellen ausfüllen &nbsp;
-      <b style="color:var(--text)">3.</b> die JSON-Antwort als <code>.json</code> speichern &nbsp;
-      <b style="color:var(--text)">4.</b> hier über „Plan importieren" laden.
+      <b style="color:var(--text)">3.</b> die erzeugte <code>.json</code>-Datei herunterladen &nbsp;
+      <b style="color:var(--text)">4.</b> hier über „Plan importieren" laden (Training + Ernährung).
     </div>
     <textarea id="aiPromptText" readonly rows="10" style="width:100%; background:var(--bg-inset); border:1px solid var(--border); border-radius:12px; padding:12px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.5; resize:vertical;"></textarea>
     <div style="height:10px"></div>
@@ -1689,15 +1733,75 @@ function computeTargets(p) {
 
 const PLAN_WEEKDAYS = ["Mo","Di","Do","Fr","Sa","So","Mi"]; // Fallback-Wochentags-Hints
 
+// Map deutscher/englischer Wochentags-Kürzel -> JS getDay() (0=So..6=Sa)
+const WEEKDAY_MAP = {
+  so:0, son:0, sonntag:0, sun:0,
+  mo:1, mon:1, montag:1, monday:1,
+  di:2, die:2, dienstag:2, tue:2, tues:2,
+  mi:3, mit:3, mittwoch:3, wed:3,
+  do:4, don:4, donnerstag:4, thu:4, thur:4,
+  fr:5, fre:5, freitag:5, fri:5,
+  sa:6, sam:6, samstag:6, sat:6
+};
+
+// Set der Trainings-Wochentage (0..6) aus den weekday-Angaben des aktiven Plans
+function trainingWeekdaySet() {
+  const set = new Set();
+  getPlanDays().forEach(d => {
+    if (!d.weekday) return;
+    const key = String(d.weekday).toLowerCase().replace(/[^a-zäöü]/g,'').slice(0,9);
+    // erst exakte Kürzel testen, dann führende Buchstaben
+    if (WEEKDAY_MAP[key] !== undefined) { set.add(WEEKDAY_MAP[key]); return; }
+    const k2 = key.slice(0,3), k1 = key.slice(0,2);
+    if (WEEKDAY_MAP[k2] !== undefined) set.add(WEEKDAY_MAP[k2]);
+    else if (WEEKDAY_MAP[k1] !== undefined) set.add(WEEKDAY_MAP[k1]);
+  });
+  return set;
+}
+
+// Cycling nur aktiv, wenn eingeschaltet UND 1..6 Trainingstage erkennbar
+function cyclingActive() {
+  if (!state.settings || !state.settings.cycling) return false;
+  const n = trainingWeekdaySet().size;
+  return n >= 1 && n <= 6;
+}
+
+// Ist das gegebene Datum (YYYY-MM-DD) ein Trainingstag laut Plan?
+function isTrainingDate(dateStr) {
+  const dow = new Date(dateStr + 'T00:00:00').getDay();
+  return trainingWeekdaySet().has(dow);
+}
+
+// Tagesabhängige Ziele (kcal/Makros). Wochenschnitt = Basis-Ziel.
+// Protein & Fett konstant; Differenz über Kohlenhydrate.
+function targetsForDate(dateStr) {
+  const base = state.targets;
+  if (!cyclingActive()) return { ...base, dayType: null };
+  const N = trainingWeekdaySet().size;            // Trainingstage/Woche
+  const bump = state.settings.cyclingBump || 0;   // Aufschlag am Trainingstag
+  const training = isTrainingDate(dateStr);
+  const kcal = training
+    ? base.kcal + bump
+    : Math.max(1000, Math.round(base.kcal - bump * N / (7 - N)));
+  const protein = base.protein;
+  const fat = base.fat;
+  const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4));
+  return { kcal: Math.round(kcal), protein, fat, carbs, dayType: training ? 'training' : 'rest' };
+}
+
 function normalizeState() {
   if (!state.notes || typeof state.notes !== 'object') state.notes = {};
   if (!Array.isArray(state.customFoods)) state.customFoods = [];
   if (!Array.isArray(state.mealGroups)) state.mealGroups = [];
   if (!Array.isArray(state.waist)) state.waist = [];
+  if (typeof state.mealPlan === 'undefined') state.mealPlan = null;
+  if (state.mealPlan !== null && !Array.isArray(state.mealPlan)) state.mealPlan = null;
   if (!Array.isArray(state.feedbackLog)) state.feedbackLog = [];
   if (!state.settings || typeof state.settings !== 'object') state.settings = {};
   if (typeof state.settings.volume !== 'number') state.settings.volume = 0.5;
   if (typeof state.settings.soundEnabled !== 'boolean') state.settings.soundEnabled = true;
+  if (typeof state.settings.cycling !== 'boolean') state.settings.cycling = true;
+  if (typeof state.settings.cyclingBump !== 'number') state.settings.cyclingBump = 250;
 
   // --- Plan-Migration (alte Versionen: kein state.plans) ---
   if (!Array.isArray(state.plans) || state.plans.length === 0) {
@@ -1848,10 +1952,13 @@ function renderToday() {
   const todayN = state.nutrition[todayStr()] || [];
   const kcal = todayN.reduce((s,x) => s + x.kcal, 0);
   const prot = todayN.reduce((s,x) => s + x.p, 0);
+  const tgtToday = targetsForDate(todayStr());
   document.getElementById('statKcal').innerHTML =
-    `${Math.round(kcal)}<span class="stat-unit">/ ${state.targets.kcal}</span>`;
+    `${Math.round(kcal)}<span class="stat-unit">/ ${tgtToday.kcal}</span>`;
+  const dtLabel = tgtToday.dayType === 'training' ? ' · Trainingstag'
+                : tgtToday.dayType === 'rest' ? ' · Ruhetag' : '';
   document.getElementById('statKcalDelta').textContent =
-    `${Math.round(prot)}g Protein · ${todayN.length} Items`;
+    `${Math.round(prot)}g Protein · ${todayN.length} Items${dtLabel}`;
 
   // Day tabs (datengetrieben aus aktivem Plan)
   const tabs = document.getElementById('dayTabs');
@@ -2203,6 +2310,10 @@ function openSettings() {
   document.getElementById('setSound').checked = state.settings.soundEnabled;
   document.getElementById('setVolume').value = Math.round(state.settings.volume * 100);
   document.getElementById('volLabel').textContent = Math.round(state.settings.volume * 100) + '%';
+  document.getElementById('setCycling').checked = !!state.settings.cycling;
+  document.getElementById('setBump').value = state.settings.cyclingBump;
+  document.getElementById('bumpLabel').textContent = state.settings.cyclingBump;
+  renderCyclingInfo();
   // Profil befüllen
   const p = state.profile;
   document.getElementById('pfName').value = p.name || '';
@@ -2225,10 +2336,44 @@ function onVolumeInput() {
   document.getElementById('volLabel').textContent = v + '%';
   state.settings.volume = v / 100;
 }
+function onBumpInput() {
+  document.getElementById('bumpLabel').textContent = document.getElementById('setBump').value;
+}
+function renderCyclingInfo() {
+  const el = document.getElementById('cyclingInfo');
+  if (!el) return;
+  const days = trainingWeekdaySet();
+  const names = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  if (!state.settings.cycling) {
+    el.innerHTML = days.size
+      ? `Erkannte Trainingstage: <b style="color:var(--text)">${[...days].sort().map(d=>names[d]).join(', ')}</b>.`
+      : 'Hinweis: Im aktiven Plan sind keine Wochentage hinterlegt.';
+    return;
+  }
+  if (days.size < 1 || days.size > 6) {
+    el.innerHTML = '⚠ Cycling braucht 1–6 Trainingstage mit Wochentag im aktiven Plan. Aktuell nicht anwendbar – es gilt das Basis-Ziel.';
+    return;
+  }
+  // Beispielwerte berechnen
+  const trainExample = (() => { const s=[...days][0]; const dl=['2024-01-07','2024-01-01','2024-01-02','2024-01-03','2024-01-04','2024-01-05','2024-01-06']; return targetsForDate(dl[s]); })();
+  const restDow = [0,1,2,3,4,5,6].find(d => !days.has(d));
+  const restDl = ['2024-01-07','2024-01-01','2024-01-02','2024-01-03','2024-01-04','2024-01-05','2024-01-06'];
+  const restExample = targetsForDate(restDl[restDow]);
+  el.innerHTML =
+    `Trainingstage: <b style="color:var(--text)">${[...days].sort().map(d=>names[d]).join(', ')}</b><br>`
+    + `💪 Trainingstag: <b style="color:var(--accent)">${trainExample.kcal} kcal</b> · ${trainExample.protein}P / ${trainExample.fat}F / ${trainExample.carbs}C<br>`
+    + `😴 Ruhetag: <b style="color:var(--accent)">${restExample.kcal} kcal</b> · ${restExample.protein}P / ${restExample.fat}F / ${restExample.carbs}C<br>`
+    + `<span style="color:var(--text-faint)">Wochenschnitt bleibt bei ${state.targets.kcal} kcal. Protein & Fett konstant, Differenz über Kohlenhydrate.</span>`;
+}
 function updateSettings() {
   state.settings.soundEnabled = document.getElementById('setSound').checked;
   state.settings.volume = document.getElementById('setVolume').value / 100;
+  state.settings.cycling = document.getElementById('setCycling').checked;
+  state.settings.cyclingBump = parseInt(document.getElementById('setBump').value, 10) || 0;
   saveState();
+  renderCyclingInfo();
+  renderToday();
+  if (document.getElementById('view-nutrition').classList.contains('active')) renderNutrition();
 }
 
 /* =================================================================
@@ -2424,47 +2569,77 @@ function closePlansModal() {
   document.getElementById('plansModal').classList.remove('active');
 }
 
-/* ----- Plan per KI erstellen: fertiger Prompt zum Kopieren ----- */
-const AI_PLAN_PROMPT = `Erstelle mir einen Trainingsplan.
+/* ----- Plan per KI erstellen: dynamischer Prompt (mit Zielwerten + Ernährung) ----- */
+function buildAiPrompt() {
+  const T = state.targets;
+  let nutritionTargets, trainKcal, restKcal;
+  if (cyclingActive()) {
+    const days = trainingWeekdaySet();
+    const dl = ['2024-01-07','2024-01-01','2024-01-02','2024-01-03','2024-01-04','2024-01-05','2024-01-06'];
+    const tr = targetsForDate(dl[[...days][0]]);
+    const restDow = [0,1,2,3,4,5,6].find(d => !days.has(d));
+    const rs = targetsForDate(dl[restDow]);
+    trainKcal = tr.kcal; restKcal = rs.kcal;
+    nutritionTargets =
+`- Trainingstag: ${tr.kcal} kcal — ${tr.protein}g Protein / ${tr.fat}g Fett / ${tr.carbs}g KH
+- Ruhetag: ${rs.kcal} kcal — ${rs.protein}g Protein / ${rs.fat}g Fett / ${rs.carbs}g KH`;
+  } else {
+    trainKcal = T.kcal; restKcal = T.kcal;
+    nutritionTargets =
+`- Tagesziel: ${T.kcal} kcal — ${T.protein}g Protein / ${T.fat}g Fett / ${T.carbs}g KH`;
+  }
+  return `Erstelle mir einen Trainingsplan UND passende Ernährungsvorschläge.
+
+TRAINING:
 - Ziel: [z.B. Muskelaufbau]
-- Tage pro Woche: [z.B. 4]
-- Split: [z.B. Upper/Lower]
+- Tage pro Woche: [z.B. 3]
+- Split: [z.B. Ganzkörper]
 - Equipment: [z.B. komplettes Gym]
 - Dauer pro Einheit: [z.B. 60 Min]
 - Level: [Anfänger / Fortgeschritten]
 - Besonderheiten: [z.B. Schulter schonen]
 
-Gib NUR gültiges JSON in genau diesem Format aus (keine Erklärung, kein Text drumherum):
+ERNÄHRUNG — richte die Mahlzeiten an diesen Zielwerten aus:
+${nutritionTargets}
+- Lebensmittel alltagstauglich, deutsch, mit Mengenangaben.
+
+Gib NUR gültiges JSON in genau diesem Format aus (keine Erklärung, kein Text drumherum)
+und stelle die Ausgabe ZUSÄTZLICH als herunterladbare .json-Datei bereit:
 
 {
   "type": "ironlog-plan",
   "schemaVersion": 2,
   "name": "...",
   "days": [
-    {
-      "code": "UA",
-      "name": "Upper A",
-      "weekday": "Mo",
-      "exercises": [
-        { "name": "Bankdrücken", "sets": 4, "reps": "6-8", "rpe": "8", "rest": 180, "cues": "...", "alt": "..." }
-      ]
-    }
+    { "code": "GK1", "name": "Ganzkörper A", "weekday": "Mo", "exercises": [
+      { "name": "Bankdrücken", "sets": 4, "reps": "6-8", "rpe": "8", "rest": 180, "cues": "...", "alt": "..." }
+    ]}
+  ],
+  "mealPlan": [
+    { "day": "Trainingstag", "kcal": ${trainKcal}, "meals": [
+      { "name": "Frühstück", "kcal": 700, "items": ["100g Haferflocken", "300ml Milch", "1 Banane"] }
+    ]},
+    { "day": "Ruhetag", "kcal": ${restKcal}, "meals": [
+      { "name": "Frühstück", "kcal": 500, "items": ["..."] }
+    ]}
   ]
 }
 
-Regeln: "type" muss exakt "ironlog-plan" sein. "rest" in Sekunden als Zahl.
-"reps" und "rpe" als Text. Pro Tag 4-7 Übungen. Gib nur das JSON aus, sonst nichts.`;
+Regeln: "type" exakt "ironlog-plan". "rest" in Sekunden (Zahl). "reps"/"rpe" als Text.
+Pro Trainingstag 4-7 Übungen. Pro Ernährungstag 4-6 Mahlzeiten, deren kcal-Summe nahe am Ziel liegt.
+Gib nur das JSON aus, sonst nichts.`;
+}
 
 function openAiPlanModal() {
   closePlansModal();
-  document.getElementById('aiPromptText').value = AI_PLAN_PROMPT;
+  document.getElementById('aiPromptText').value = buildAiPrompt();
   document.getElementById('aiPlanModal').classList.add('active');
 }
 function closeAiPlanModal() {
   document.getElementById('aiPlanModal').classList.remove('active');
 }
 async function copyAiPrompt() {
-  const text = AI_PLAN_PROMPT;
+  const text = document.getElementById('aiPromptText').value;
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(text);
@@ -2564,21 +2739,52 @@ function importPlan(event) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      const plan = validateAndNormalizePlan(data);
-      state.plans.push(plan);
-      state.activePlanId = plan.id;
-      state.currentDayIdx = 0;
-      openExercises.clear();
+      const did = [];
+      // Trainingsplan (falls 'days' vorhanden)
+      if (data && Array.isArray(data.days) && data.days.length) {
+        const plan = validateAndNormalizePlan(data);
+        state.plans.push(plan);
+        state.activePlanId = plan.id;
+        state.currentDayIdx = 0;
+        openExercises.clear();
+        did.push(`Plan „${plan.name}"`);
+      }
+      // Ernährungsplan (falls 'mealPlan' vorhanden)
+      const mp = sanitizeMealPlan(data && data.mealPlan);
+      if (mp) {
+        state.mealPlan = mp;
+        state.selectedMealDay = 0;
+        did.push("Ernährungsplan");
+      }
+      if (did.length === 0) throw new Error("Weder 'days' noch 'mealPlan' im JSON gefunden.");
       saveState();
       renderPlansList();
       renderToday();
-      showToast(`✓ Plan „${plan.name}" importiert & aktiviert`);
+      const nv = document.getElementById('view-nutrition');
+      if (nv && nv.classList.contains('active')) renderNutrition();
+      showToast("✓ " + did.join(" + ") + " importiert");
     } catch(err) {
-      alert("Plan-Import fehlgeschlagen:\n" + err.message + "\n\nFormat siehe PLAN-FORMAT.md");
+      alert("Import fehlgeschlagen:\n" + err.message + "\n\nFormat siehe Prompt / PLAN-FORMAT.md");
     }
   };
   reader.readAsText(file);
   event.target.value = '';
+}
+
+// Ernährungsplan aus Import säubern/validieren
+function sanitizeMealPlan(mp) {
+  if (!Array.isArray(mp) || mp.length === 0) return null;
+  const out = mp.slice(0, 7).map(d => {
+    const meals = Array.isArray(d.meals) ? d.meals.slice(0, 8).map(m => ({
+      name: String(m.name || "Mahlzeit").slice(0, 40),
+      kcal: Math.max(0, Math.round(Number(m.kcal) || 0)),
+      items: Array.isArray(m.items) ? m.items.slice(0, 14).map(x => String(x).slice(0, 90)) : []
+    })).filter(m => m.items.length > 0) : [];
+    let kcal = Math.round(Number(d.kcal) || 0);
+    if (!kcal) kcal = meals.reduce((s, m) => s + m.kcal, 0);
+    return { day: String(d.day || "Tag").slice(0, 40), kcal, meals };
+  }).filter(d => d.meals.length > 0);
+  return out.length ? out : null;
 }
 function exportActivePlan() {
   const pl = getActivePlan();
@@ -2616,10 +2822,41 @@ function nutritionToToday() {
   selectedDate = todayStr();
   renderNutrition();
 }
+function shiftDate(dateStr, delta) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const da = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${da}`;
+}
+function nutShiftDay(delta) {
+  selectedDate = shiftDate(activeDate(), delta);
+  renderNutrition();
+  showToast(selectedDate === todayStr() ? 'Heute' : fmtDate(selectedDate));
+}
+// Wischen auf der „gegessen"-Kachel wechselt den Tag (nur klar horizontale Geste)
+function setupNutSwipe() {
+  const card = document.getElementById('foodLogCard');
+  if (!card) return;
+  let x0 = null, y0 = null;
+  card.addEventListener('touchstart', e => {
+    const t = e.changedTouches[0]; x0 = t.clientX; y0 = t.clientY;
+  }, { passive: true });
+  card.addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - x0, dy = t.clientY - y0;
+    x0 = null; y0 = null;
+    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.6) {
+      nutShiftDay(dx < 0 ? 1 : -1);   // links wischen = nächster Tag
+    }
+  }, { passive: true });
+}
 
 function renderNutrition() {
-  const T = state.targets;
   const dateKey = activeDate();
+  const T = targetsForDate(dateKey);
   const todayN = state.nutrition[dateKey] || [];
   const kcal = todayN.reduce((s,x) => s + x.kcal, 0);
   const p = todayN.reduce((s,x) => s + x.p, 0);
@@ -2644,7 +2881,11 @@ function renderNutrition() {
   document.getElementById('tgtFat').textContent = '/ ' + T.fat + 'g';
   document.getElementById('tgtCarb').textContent = '/ ' + T.carbs + 'g';
   const sub = document.getElementById('nutSubtitle');
-  if (sub) sub.textContent = `${T.kcal} kcal · ${T.protein}P / ${T.fat}F / ${T.carbs}C`;
+  if (sub) {
+    const dt = T.dayType === 'training' ? ' · 💪 Trainingstag'
+             : T.dayType === 'rest' ? ' · 😴 Ruhetag' : '';
+    sub.textContent = `${T.kcal} kcal · ${T.protein}P / ${T.fat}F / ${T.carbs}C${dt}`;
+  }
 
   document.getElementById('progKcal').style.width = Math.min(100, kcal/T.kcal*100) + '%';
   document.getElementById('progProt').style.width = Math.min(100, p/T.protein*100) + '%';
@@ -2686,12 +2927,19 @@ function renderNutrition() {
     }).join('');
   }
 
-  // Meal plan (7-Tage-Raster, kein Sliden)
+  // Meal plan (Raster, kein Sliden) — eigener Plan (Import) oder statische Vorschläge
+  const MP = getMealPlan();
+  const custom = Array.isArray(state.mealPlan) && state.mealPlan.length > 0;
+  if (state.selectedMealDay >= MP.length) state.selectedMealDay = 0;
   const planList = document.getElementById('mealPlan');
-  const day = MEAL_PLAN[state.selectedMealDay];
+  const day = MP[state.selectedMealDay];
   planList.innerHTML = `
+    ${custom ? `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <span class="mono" style="font-size:11px; color:var(--accent);">★ Eigener Plan (importiert)</span>
+      <button class="btn-small btn-ghost" style="width:auto;" onclick="resetMealPlan()">Zurücksetzen</button>
+    </div>` : ''}
     <div class="meal-day-grid">
-      ${MEAL_PLAN.map((d,i) => `<div class="day-tab${i===state.selectedMealDay?' active':''}" onclick="selectMealDay(${i})">${i+1}</div>`).join('')}
+      ${MP.map((d,i) => `<div class="day-tab${i===state.selectedMealDay?' active':''}" onclick="selectMealDay(${i})">${i+1}</div>`).join('')}
     </div>
     <div style="font-family:'Sora'; font-weight:700; font-size:18px; margin-bottom:4px;">${day.day}</div>
     <div class="mono" style="font-size:11px; color: var(--accent); margin-bottom:14px;">~${day.kcal} kcal</div>
@@ -2705,6 +2953,18 @@ function renderNutrition() {
       </div>
     `).join('')}
   `;
+}
+
+function getMealPlan() {
+  return (Array.isArray(state.mealPlan) && state.mealPlan.length) ? state.mealPlan : MEAL_PLAN;
+}
+function resetMealPlan() {
+  if (!confirm("Eigenen Ernährungsplan entfernen und Standard-Vorschläge zeigen?")) return;
+  state.mealPlan = null;
+  state.selectedMealDay = 0;
+  saveState();
+  renderNutrition();
+  showToast("✓ Ernährungsplan zurückgesetzt");
 }
 
 function selectMealDay(i) {
@@ -3040,8 +3300,12 @@ function openManualBarcode(ean) {
 let weightChartInstance = null;
 let waistChartInstance = null;
 
-function renderMetricHistory(arr, unit) {
-  return [...arr].reverse().slice(0, 12).map((row, i, a) => {
+function renderMetricHistory(metric) {
+  const arr = metric === 'weight' ? state.weights : state.waist;
+  const unit = metric === 'weight' ? 'kg' : 'cm';
+  const key = metric === 'weight' ? 'kg' : 'cm';
+  const withIdx = arr.map((row, idx) => ({ idx, date: row.date, val: row[key] }));
+  return [...withIdx].reverse().slice(0, 12).map((row, i, a) => {
     const val = row.val;
     const prev = a[i+1];
     const delta = prev ? val - prev.val : null;
@@ -3052,9 +3316,43 @@ function renderMetricHistory(arr, unit) {
     return `
       <div class="history-item">
         <div class="history-date">${fmtDate(row.date)}</div>
-        <div class="history-value">${val.toFixed(1)} ${unit}${deltaStr}</div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="history-value">${val.toFixed(1)} ${unit}${deltaStr}</div>
+          <button class="hist-btn" onclick="editMetric('${metric}',${row.idx})" title="Bearbeiten">✎</button>
+          <button class="hist-btn del" onclick="deleteMetric('${metric}',${row.idx})" title="Löschen">✕</button>
+        </div>
       </div>`;
   }).join('');
+}
+
+function editMetric(metric, idx) {
+  const arr = metric === 'weight' ? state.weights : state.waist;
+  const row = arr[idx];
+  if (!row) return;
+  const unit = metric === 'weight' ? 'kg' : 'cm';
+  const key = metric === 'weight' ? 'kg' : 'cm';
+  const input = prompt(`Wert bearbeiten (${unit}):`, String(row[key]));
+  if (input === null) return;
+  const v = parseFloat(String(input).replace(',', '.'));
+  const min = metric === 'weight' ? 30 : 40;
+  const max = metric === 'weight' ? 250 : 200;
+  if (!v || v < min || v > max) { showToast(`Ungültiger Wert (${min}–${max} ${unit})`, true); return; }
+  row[key] = v;
+  saveState();
+  renderWeight();
+  renderToday();
+  showToast(`✓ Auf ${v} ${unit} aktualisiert`);
+}
+
+function deleteMetric(metric, idx) {
+  const arr = metric === 'weight' ? state.weights : state.waist;
+  if (!arr[idx]) return;
+  if (!confirm("Diesen Eintrag wirklich löschen?")) return;
+  arr.splice(idx, 1);
+  saveState();
+  renderWeight();
+  renderToday();
+  showToast("✓ Eintrag gelöscht");
 }
 
 function buildLineChart(canvasId, existing, rows, label) {
@@ -3097,7 +3395,7 @@ function renderWeight() {
     wCard.style.display = 'block';
     document.getElementById('weightCount').textContent = `${wts.length} Einträge`;
     document.getElementById('weightHistory').innerHTML =
-      renderMetricHistory(wts.map(w => ({ date: w.date, val: w.kg })), 'kg');
+      renderMetricHistory('weight');
     weightChartInstance = buildLineChart('weightChart', weightChartInstance,
       wts.map(w => ({ date: w.date, val: w.kg })), 'Körpergewicht (kg)');
   }
@@ -3111,7 +3409,7 @@ function renderWeight() {
     cCard.style.display = 'block';
     document.getElementById('waistCount').textContent = `${wsts.length} Einträge`;
     document.getElementById('waistHistory').innerHTML =
-      renderMetricHistory(wsts.map(w => ({ date: w.date, val: w.cm })), 'cm');
+      renderMetricHistory('waist');
     waistChartInstance = buildLineChart('waistChart', waistChartInstance,
       wsts.map(w => ({ date: w.date, val: w.cm })), 'Bauchumfang (cm)');
   }
@@ -3382,6 +3680,7 @@ window.addEventListener('beforeinstallprompt', e => {
    ================================================================= */
 loadState();
 renderToday();
+setupNutSwipe();
 
 // Auto-save on page hide
 window.addEventListener('pagehide', saveState);
