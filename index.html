@@ -713,6 +713,30 @@ input[type="range"]::-moz-range-thumb {
   justify-content: center;
   padding: 20px;
 }
+.onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg);
+  display: none;
+  overflow-y: auto;
+  padding: 32px 22px;
+}
+.onboarding.active { display: flex; align-items: center; justify-content: center; }
+.onboarding-inner { width: 100%; max-width: 460px; text-align: center; }
+.onb-step {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 14px 16px; margin-bottom: 10px;
+}
+.onb-num {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent);
+  font-family: 'JetBrains Mono', monospace; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.onb-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px; }
+.onb-sub { font-size: 12px; color: var(--text-dim); line-height: 1.4; margin-top: 2px; }
 .modal-bg.active { display: flex; }
 .modal {
   background: var(--bg-elevated);
@@ -1659,6 +1683,52 @@ input[type="range"]::-moz-range-thumb {
   </div>
 </div>
 
+<div class="onboarding" id="onboarding">
+  <div class="onboarding-inner">
+    <svg viewBox="0 0 512 512" aria-hidden="true" style="width:64px; height:64px; margin:0 auto 14px; display:block;">
+      <rect width="512" height="512" rx="116" fill="#171b21"/>
+      <rect x="206" y="244" width="100" height="24" rx="12" fill="#eef1f5"/>
+      <rect x="180" y="186" width="34" height="140" rx="14" fill="#5b8def"/>
+      <rect x="298" y="186" width="34" height="140" rx="14" fill="#5b8def"/>
+      <rect x="146" y="208" width="26" height="96" rx="12" fill="#5b8def"/>
+      <rect x="340" y="208" width="26" height="96" rx="12" fill="#5b8def"/>
+      <rect x="118" y="226" width="18" height="60" rx="9" fill="#eef1f5"/>
+      <rect x="376" y="226" width="18" height="60" rx="9" fill="#eef1f5"/>
+    </svg>
+    <div style="font-family:'Sora',sans-serif; font-weight:800; font-size:26px; letter-spacing:0.02em;">Willkommen bei IRON.LOG</div>
+    <div style="color:var(--text-dim); font-size:14px; line-height:1.6; margin:10px 0 24px;">
+      Erstelle deinen persönlichen Trainings- &amp; Ernährungsplan mit KI – in drei Schritten.
+    </div>
+
+    <div class="onb-step">
+      <div class="onb-num">1</div>
+      <div style="flex:1; min-width:0;">
+        <div class="onb-title">Profil ausfüllen</div>
+        <div class="onb-sub">Größe, Gewicht, Ziel – daraus berechnen sich deine kcal.</div>
+      </div>
+      <button class="btn btn-small" style="width:auto;" onclick="openSettings()">Öffnen</button>
+    </div>
+    <div class="onb-step">
+      <div class="onb-num">2</div>
+      <div style="flex:1; min-width:0;">
+        <div class="onb-title">Plan mit KI erstellen</div>
+        <div class="onb-sub">Maske ausfüllen → Prompt kopieren → bei deiner KI einfügen.</div>
+      </div>
+      <button class="btn btn-small" style="width:auto;" onclick="openAiPlanModal()">🧠 Start</button>
+    </div>
+    <div class="onb-step">
+      <div class="onb-num">3</div>
+      <div style="flex:1; min-width:0;">
+        <div class="onb-title">Plan importieren</div>
+        <div class="onb-sub">Die erzeugte .json-Datei hier laden – fertig.</div>
+      </div>
+      <button class="btn btn-small btn-secondary" style="width:auto;" onclick="document.getElementById('planImportFile').click()">Import</button>
+    </div>
+
+    <button class="btn btn-ghost" style="margin-top:22px;" onclick="useExamplePlan()">oder Beispielplan ausprobieren</button>
+  </div>
+</div>
+
 <div class="toast" id="toast">—</div>
 
 <script>
@@ -2048,6 +2118,12 @@ function normalizeState() {
   }
   if (!state.activePlanId) state.activePlanId = state.plans[0].id;
   migrateSupersets();
+  if (typeof state.onboarded !== 'boolean') {
+    const hasOwn = Array.isArray(state.plans) && state.plans.some(p => p.id !== 'default');
+    const hasHistory = Array.isArray(state.workoutHistory) && state.workoutHistory.length > 0;
+    const hasWeights = Array.isArray(state.weights) && state.weights.length > 0;
+    state.onboarded = !!(hasOwn || hasHistory || hasWeights);
+  }
 
   // alte currentDay-Keys (z.B. "upperA") -> Index migrieren
   if (state.currentDay !== undefined) {
@@ -3171,6 +3247,17 @@ function backToSettings() {
   closePlansModal();
   openSettings();
 }
+function updateOnboarding() {
+  const el = document.getElementById('onboarding');
+  if (el) el.classList.toggle('active', !state.onboarded);
+}
+function useExamplePlan() {
+  state.onboarded = true;
+  saveState();
+  updateOnboarding();
+  renderToday();
+  showToast("✓ Beispielplan aktiv – du kannst jederzeit einen KI-Plan importieren");
+}
 
 /* ----- Plan per KI erstellen: dynamischer Prompt aus Eingabemaske ----- */
 function aiVal(id, fallback) {
@@ -3521,9 +3608,11 @@ function importPlan(event) {
         did.push("Ernährungsplan");
       }
       if (did.length === 0) throw new Error("Weder 'days' noch 'mealPlan' im JSON gefunden.");
+      state.onboarded = true;
       saveState();
       renderPlansList();
       renderToday();
+      updateOnboarding();
       const nv = document.getElementById('view-nutrition');
       if (nv && nv.classList.contains('active')) renderNutrition();
       showToast("✓ " + did.join(" + ") + " importiert");
@@ -4590,6 +4679,7 @@ window.addEventListener('beforeinstallprompt', e => {
    ================================================================= */
 loadState();
 renderToday();
+updateOnboarding();
 setupNutSwipe();
 
 // Auto-save on page hide
