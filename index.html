@@ -1545,6 +1545,43 @@ input[type="range"]::-moz-range-thumb {
       <input type="text" id="aiSpecial" placeholder="z.B. Schulter schonen, montags wenig Zeit" oninput="refreshAiPrompt()">
     </div>
 
+    <div style="margin:18px 0 10px; padding-top:14px; border-top:1px solid var(--border); font-family:'Sora',sans-serif; font-weight:700; font-size:14px;">Ernährung</div>
+
+    <div class="input-group">
+      <label>Kostform</label>
+      <select id="aiDiet" onchange="refreshAiPrompt()">
+        <option>Omnivor (alles)</option>
+        <option>Vegetarisch</option>
+        <option>Vegan</option>
+        <option>Pescetarisch</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label>Umfang des Ernährungsplans</label>
+      <select id="aiMealDays" onchange="refreshAiPrompt()">
+        <option>Trainings- & Ruhetag</option>
+        <option>Ganze Woche (7 Tage)</option>
+        <option>1 Beispieltag</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label>Mahlzeiten pro Tag</label>
+      <select id="aiMeals" onchange="refreshAiPrompt()">
+        <option>KI entscheidet</option>
+        <option>3</option>
+        <option>4</option>
+        <option>5</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label>Vorlieben (optional)</label>
+      <input type="text" id="aiLikes" placeholder="z.B. viel Hähnchen, Reis, Skyr, Haferflocken" oninput="refreshAiPrompt()">
+    </div>
+    <div class="input-group">
+      <label>Vermeiden / Unverträglichkeiten (optional)</label>
+      <input type="text" id="aiAvoid" placeholder="z.B. keine Linsen, laktosefrei, kein Schwein" oninput="refreshAiPrompt()">
+    </div>
+
     <label style="display:block; font-size:12px; color:var(--text-dim); font-weight:600; margin:6px 0 7px;">Dein fertiger Prompt</label>
     <textarea id="aiPromptText" readonly rows="8" style="width:100%; background:var(--bg-inset); border:1px solid var(--border); border-radius:12px; padding:12px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.5; resize:vertical;"></textarea>
     <div style="height:10px"></div>
@@ -3048,6 +3085,20 @@ function buildAiPrompt() {
   const cardio = aiVal('aiCardio', 'Nur Warm-up & Cool-down');
   const formats = aiVal('aiFormats', 'Keine');
   const special = (aiVal('aiSpecial', '') || '').trim();
+  // Ernährungs-Präferenzen
+  const diet = aiVal('aiDiet', 'Omnivor (alles)');
+  const mealDays = aiVal('aiMealDays', 'Trainings- & Ruhetag');
+  const meals = aiVal('aiMeals', 'KI entscheidet');
+  const likes = (aiVal('aiLikes', '') || '').trim();
+  const avoid = (aiVal('aiAvoid', '') || '').trim();
+  const mealDaysInstr = mealDays === 'Ganze Woche (7 Tage)'
+    ? 'ganze Woche = 7 Tageseinträge (Mo–So), jeder Tag mit den passenden kcal (Trainingstag bzw. Ruhetag)'
+    : (mealDays === '1 Beispieltag' ? 'ein einzelner Beispieltag' : 'je ein Trainings- und ein Ruhetag (2 Einträge)');
+  let nutPrefs = `\n- Umfang: ${mealDaysInstr}`;
+  if (!diet.startsWith('Omnivor')) nutPrefs += `\n- Kostform: ${diet} (strikt einhalten)`;
+  if (meals !== 'KI entscheidet') nutPrefs += `\n- Mahlzeiten pro Tag: ${meals}`;
+  if (likes) nutPrefs += `\n- Vorlieben: ${likes}`;
+  if (avoid) nutPrefs += `\n- Vermeiden / Unverträglichkeiten (strikt): ${avoid}`;
   const splitLine = split.startsWith('Automatisch')
     ? 'Split: wähle einen sinnvollen Split passend zur Tagesanzahl'
     : `Split: ${split}`;
@@ -3076,7 +3127,7 @@ TRAINING:
 ${trainingBlock}
 
 ERNÄHRUNG — richte die Mahlzeiten an diesen Zielwerten aus:
-${nutritionTargets}
+${nutritionTargets}${nutPrefs}
 - Lebensmittel alltagstauglich, deutsch, mit Mengenangaben.
 
 Gib NUR gültiges JSON in genau diesem Format aus (keine Erklärung, kein Text drumherum)
@@ -3118,7 +3169,9 @@ Workout-Format pro Tag (optional): "format" ist "standard" (Standard, weglassbar
 Bei "amrap"/"emom" zusätzlich "timeCap" (Minuten), bei "rounds" zusätzlich "rounds" (Anzahl). Nur für Hybrid-/HYROX-/Konditions-Tage nutzen.
 Supersätze: zwei (oder mehr) aufeinanderfolgende Übungen mit gleichem "group"-Buchstaben (z.B. "A") kennzeichnen;
 bei allen außer der letzten der Gruppe "rest": 0, bei der letzten die echte Pausenzeit.
-Pro Trainingstag 4-7 Übungen. Pro Ernährungstag 4-6 Mahlzeiten, deren kcal-Summe nahe am Ziel liegt.
+Pro Trainingstag 4-7 Übungen. Pro Ernährungstag so viele Mahlzeiten wie gewünscht (sonst 4-6), kcal-Summe nahe am Ziel.
+Die Anzahl der Tageseinträge in "mealPlan" richtet sich nach dem gewünschten Umfang (z.B. 7 Einträge bei „ganze Woche").
+Halte Kostform und Vermeidungen strikt ein.
 Gib nur das JSON aus, sonst nichts.`;
 }
 
