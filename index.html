@@ -282,6 +282,17 @@ main { padding: 20px; }
 }
 .exercise.open .exercise-body { display: block; }
 
+/* Supersatz-Block */
+.exercise.superset { border-color: var(--accent); }
+.ss-move + .ss-move { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border); }
+.ss-move-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.ss-move-head .exercise-target { margin-top: 0; }
+.ss-tag {
+  display: inline-block; background: var(--accent-soft); color: var(--accent);
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+  padding: 1px 6px; border-radius: 6px; margin-right: 5px;
+}
+
 .cues {
   font-size: 13px;
   color: var(--text-dim);
@@ -1511,7 +1522,7 @@ input[type="range"]::-moz-range-thumb {
         <option>Vorwiegend Maschinen / Geräte</option>
       </select>
     </div>
-    <div class="input-group">
+    <div class="input-group" id="grpCardio">
       <label>Kardio</label>
       <select id="aiCardio" onchange="refreshAiPrompt()">
         <option>Kein Kardio</option>
@@ -1598,7 +1609,8 @@ const DEFAULT_PLAN = {
         { id: "ua3", name: "Schulterdrücken Kurzhantel", sets: 3, reps: "8-10", rpe: "8", rest: 120, cues: "Sitzend, keine Hyperextension", alt: "Schulterdrücken Maschine" },
         { id: "ua4", name: "Rudern T-Bar oder LH", sets: 3, reps: "8-10", rpe: "8", rest: 120, cues: "Ellenbogen nach hinten, Lat anspannen", alt: "Kabelrudern eng" },
         { id: "ua5", name: "Seitheben Kurzhantel", sets: 3, reps: "12-15", rpe: "9", rest: 60, cues: "Leicht vorgeneigt, Ellenbogen führen", alt: "Seitheben Kabel" },
-        { id: "ua6", name: "Bizeps Curl LH + Trizeps Pushdown (Superset)", sets: 3, reps: "10-12", rpe: "9", rest: 90, cues: "Kein Schwung, volle Range", alt: "KH Curl + Dips" }
+        { id: "ua6a", name: "Bizeps Curl LH", group: "A", sets: 3, reps: "10-12", rpe: "9", rest: 0, cues: "Kein Schwung, volle Range", alt: "KH Curl" },
+        { id: "ua6b", name: "Trizeps Pushdown", group: "A", sets: 3, reps: "10-12", rpe: "9", rest: 90, cues: "Ellbogen fixiert, volle Streckung", alt: "Dips" }
       ]
     },
     {
@@ -1620,7 +1632,8 @@ const DEFAULT_PLAN = {
         { id: "ub3", name: "Kurzhantel Schrägbank", sets: 3, reps: "8-10", rpe: "8", rest: 120, cues: "Brust gestreckt, KH zusammen oben", alt: "Brust-Maschine" },
         { id: "ub4", name: "Lat-Pulldown eng (V-Griff)", sets: 3, reps: "10-12", rpe: "8", rest: 90, cues: "Ellenbogen zur Hüfte ziehen", alt: "Klimmzug eng" },
         { id: "ub5", name: "Face Pulls", sets: 3, reps: "12-15", rpe: "9", rest: 60, cues: "Hohe Position, externe Rotation", alt: "Reverse Pec Deck" },
-        { id: "ub6", name: "Hammer Curl + French Press (Superset)", sets: 3, reps: "10-12", rpe: "9", rest: 90, cues: "Langsame Negative", alt: "Konzentrationscurl + Pushdown" }
+        { id: "ub6a", name: "Hammer Curl", group: "B", sets: 3, reps: "10-12", rpe: "9", rest: 0, cues: "Langsame Negative", alt: "Konzentrationscurl" },
+        { id: "ub6b", name: "French Press", group: "B", sets: 3, reps: "10-12", rpe: "9", rest: 90, cues: "Ellbogen eng führen", alt: "Pushdown" }
       ]
     },
     {
@@ -1905,6 +1918,41 @@ function targetsForDate(dateStr) {
   return { kcal: Math.round(kcal), protein, fat, carbs, dayType: training ? 'training' : 'rest' };
 }
 
+function migrateSupersets() {
+  // Wandelt alte kombinierte "... + ... (Superset)"-Einträge in gruppierte Einzelübungen um.
+  (state.plans || []).forEach(pl => {
+    (pl.days || []).forEach(day => {
+      if (!Array.isArray(day.exercises)) return;
+      let code = 64; // 'A' - 1
+      const out = [];
+      day.exercises.forEach(ex => {
+        const m = /^(.*?)\s*\(superset\)\s*$/i.exec(ex.name || '');
+        if (m && m[1].includes(' + ')) {
+          const parts = m[1].split('+').map(s => s.trim()).filter(Boolean);
+          const alts = (ex.alt || '').split('+').map(s => s.trim());
+          if (parts.length >= 2) {
+            code++;
+            const g = String.fromCharCode(code);
+            parts.forEach((pname, idx) => {
+              out.push({
+                ...ex,
+                id: `${ex.id}_${idx + 1}`,
+                name: pname,
+                group: g,
+                rest: idx === parts.length - 1 ? ex.rest : 0,
+                alt: alts[idx] || ''
+              });
+            });
+            return;
+          }
+        }
+        out.push(ex);
+      });
+      day.exercises = out;
+    });
+  });
+}
+
 function normalizeState() {
   if (!state.notes || typeof state.notes !== 'object') state.notes = {};
   if (!Array.isArray(state.customFoods)) state.customFoods = [];
@@ -1925,6 +1973,7 @@ function normalizeState() {
     state.activePlanId = "default";
   }
   if (!state.activePlanId) state.activePlanId = state.plans[0].id;
+  migrateSupersets();
 
   // alte currentDay-Keys (z.B. "upperA") -> Index migrieren
   if (state.currentDay !== undefined) {
@@ -2115,6 +2164,7 @@ document.getElementById('startWorkoutBtn').onclick = () => {
 let timerInterval = null;
 let timerEnd = 0;
 let timerTotal = 0;
+let timerExId = null;
 let openExercises = new Set();   // welche Übungen sind aufgeklappt (Laufzeit)
 
 /* =================================================================
@@ -2157,6 +2207,55 @@ function exTargetLine(ex) {
   return `${ex.sets} × ${labels}${ex.rest ? ` · ${ex.rest}s Pause` : ''}`;
 }
 
+function exSetsState(ex, plan) {
+  const lastWorkout = [...state.workoutHistory].reverse().find(w => w.dayCode === plan.code);
+  const lastEx = lastWorkout?.exercises.find(e => e.id === ex.id);
+  const activeEx = state.activeWorkout?.exercises.find(e => e.id === ex.id);
+  const sets = activeEx?.sets || Array.from({length: ex.sets}, () => emptySet(ex));
+  return { lastEx, sets };
+}
+function exCuesNoteHtml(ex, note) {
+  return `<div class="cues">💡 ${ex.cues}</div>` +
+    (note ? `<div class="note-display" id="noteDisp-${ex.id}">📝 ${note.replace(/</g,'&lt;')}</div>` : '');
+}
+function exSetTableHtml(ex, sets, lastEx) {
+  const mets = exMetrics(ex);
+  const cols = `28px repeat(${mets.length},1fr) 40px`;
+  const header = `<div class="set-header" style="grid-template-columns:${cols}"><div>Set</div>${mets.map(m => `<div>${METRICS[m].label}${METRICS[m].unit ? ` (${METRICS[m].unit})` : ''}</div>`).join('')}<div></div></div>`;
+  const rows = sets.map((s,i) => {
+    const lastSet = lastEx?.sets?.[i];
+    const inputs = mets.map(m => {
+      const k = METRICS[m].key;
+      let ph = (lastSet && lastSet[k] != null && lastSet[k] !== '') ? lastSet[k] : '';
+      if (ph === '' && m === 'reps' && ex.reps) ph = String(ex.reps).split('-')[0];
+      return `<input type="number" step="${METRICS[m].step}" inputmode="${METRICS[m].mode}" placeholder="${ph}" value="${s[k] ?? ''}" onchange="updateSet('${ex.id}',${i},'${k}',this.value)">`;
+    }).join('');
+    return `<div class="set-row" data-ex="${ex.id}" data-set="${i}" style="grid-template-columns:${cols}"><div class="set-num">${i+1}</div>${inputs}<div class="set-check ${s.done?'checked':''}" onclick="toggleSet('${ex.id}',${i},${ex.rest || 0})">${s.done?'✓':''}</div></div>`;
+  }).join('');
+  return header + rows;
+}
+function exTimerHtml(ex) {
+  return `<div class="timer" id="timer-${ex.id}" style="display:none;">
+          <div class="timer-track"><div class="timer-fill" id="timerFill-${ex.id}"></div></div>
+          <div class="timer-row">
+            <div>
+              <div class="timer-label">Pause läuft</div>
+              <div class="timer-value" id="timerVal-${ex.id}">${ex.rest}s</div>
+            </div>
+            <div class="timer-controls">
+              <button class="timer-btn" onclick="addTime(15)">+15s</button>
+              <button class="timer-btn" onclick="stopTimer()">Skip</button>
+            </div>
+          </div>
+        </div>`;
+}
+function exActionsHtml(ex, note) {
+  return `<div class="exercise-actions">
+          <button class="btn-small btn-ghost" onclick="openNotesModal('${ex.id}')">📝 ${note ? 'Notiz bearbeiten' : 'Notiz hinzufügen'}</button>
+          <span class="alt-text">Alt: ${ex.alt}</span>
+        </div>`;
+}
+
 function renderTraining() {
   const tabs = document.getElementById('trainingDayTabs');
   tabs.innerHTML = '';
@@ -2190,69 +2289,84 @@ function renderTraining() {
   const list = document.getElementById('exerciseList');
   list.innerHTML = '';
 
-  plan.exercises.forEach((ex, exIdx) => {
-    // last performance (gleicher dayCode)
-    const lastWorkout = [...state.workoutHistory].reverse().find(w => w.dayCode === plan.code);
-    const lastEx = lastWorkout?.exercises.find(e => e.id === ex.id);
+  // Render-Einheiten: aufeinanderfolgende Übungen mit gleichem group-Wert = Supersatz
+  const units = [];
+  plan.exercises.forEach(ex => {
+    const last = units[units.length - 1];
+    if (ex.group && last && last.group === ex.group) last.items.push(ex);
+    else units.push({ group: ex.group || null, items: [ex] });
+  });
 
-    // current active sets
-    const activeEx = state.activeWorkout?.exercises.find(e => e.id === ex.id);
-    const sets = activeEx?.sets || Array.from({length: ex.sets}, () => emptySet(ex));
-    const allDone = sets.every(s => s.done);
-    const note = state.notes[ex.id];
-
-    const wrap = document.createElement('div');
-    wrap.className = 'exercise';
-    wrap.dataset.exid = ex.id;
-    wrap.innerHTML = `
+  units.forEach(unit => {
+    if (unit.items.length < 2) {
+      // Einzelübung (wie gehabt)
+      const ex = unit.items[0];
+      const { lastEx, sets } = exSetsState(ex, plan);
+      const allDone = sets.every(s => s.done);
+      const note = state.notes[ex.id];
+      const wrap = document.createElement('div');
+      wrap.className = 'exercise';
+      wrap.dataset.exid = ex.id;
+      wrap.innerHTML = `
       <div class="exercise-header" onclick="toggleExercise('${ex.id}')">
         <div style="flex:1; min-width:0;">
           <div class="exercise-name">${ex.name}</div>
           <div class="exercise-target">${exTargetLine(ex)}</div>
         </div>
-        <div class="exercise-status ${allDone && state.activeWorkout ? 'done' : ''}">${allDone && state.activeWorkout ? '✓' : `${sets.filter(s=>s.done).length}/${ex.sets}`}</div>
+        <div class="exercise-status ${allDone && state.activeWorkout ? 'done' : ''}" id="exStatus-${ex.id}">${allDone && state.activeWorkout ? '✓' : `${sets.filter(s=>s.done).length}/${ex.sets}`}</div>
       </div>
       <div class="exercise-body">
-        <div class="cues">💡 ${ex.cues}</div>
-        ${note ? `<div class="note-display" id="noteDisp-${ex.id}">📝 ${note.replace(/</g,'&lt;')}</div>` : ''}
-        ${(() => {
-          const mets = exMetrics(ex);
-          const cols = `28px repeat(${mets.length},1fr) 40px`;
-          const header = `<div class="set-header" style="grid-template-columns:${cols}"><div>Set</div>${mets.map(m => `<div>${METRICS[m].label}${METRICS[m].unit ? ` (${METRICS[m].unit})` : ''}</div>`).join('')}<div></div></div>`;
-          const rows = sets.map((s,i) => {
-            const lastSet = lastEx?.sets?.[i];
-            const inputs = mets.map(m => {
-              const k = METRICS[m].key;
-              let ph = (lastSet && lastSet[k] != null && lastSet[k] !== '') ? lastSet[k] : '';
-              if (ph === '' && m === 'reps' && ex.reps) ph = String(ex.reps).split('-')[0];
-              return `<input type="number" step="${METRICS[m].step}" inputmode="${METRICS[m].mode}" placeholder="${ph}" value="${s[k] ?? ''}" onchange="updateSet('${ex.id}',${i},'${k}',this.value)">`;
-            }).join('');
-            return `<div class="set-row" data-ex="${ex.id}" data-set="${i}" style="grid-template-columns:${cols}"><div class="set-num">${i+1}</div>${inputs}<div class="set-check ${s.done?'checked':''}" onclick="toggleSet('${ex.id}',${i},${ex.rest || 0})">${s.done?'✓':''}</div></div>`;
-          }).join('');
-          return header + rows;
-        })()}
-        <div class="timer" id="timer-${ex.id}" style="display:none;">
-          <div class="timer-track"><div class="timer-fill" id="timerFill-${ex.id}"></div></div>
-          <div class="timer-row">
-            <div>
-              <div class="timer-label">Pause läuft</div>
-              <div class="timer-value" id="timerVal-${ex.id}">${ex.rest}s</div>
+        ${exCuesNoteHtml(ex, note)}
+        ${exSetTableHtml(ex, sets, lastEx)}
+        ${exTimerHtml(ex)}
+        ${exActionsHtml(ex, note)}
+      </div>`;
+      if (openExercises.has(ex.id)) wrap.classList.add('open');
+      list.appendChild(wrap);
+    } else {
+      // Supersatz-Block
+      const grp = unit.group;
+      const firstId = unit.items[0].id;
+      let done = 0, total = 0;
+      const moves = unit.items.map((ex, mi) => {
+        const { lastEx, sets } = exSetsState(ex, plan);
+        const mDone = sets.filter(s => s.done).length;
+        done += mDone; total += ex.sets;
+        const note = state.notes[ex.id];
+        const mAll = mDone === ex.sets && state.activeWorkout;
+        return `
+        <div class="ss-move">
+          <div class="ss-move-head">
+            <div style="flex:1; min-width:0;">
+              <div class="exercise-name" style="font-size:15px;"><span class="ss-tag">${grp}${mi+1}</span>${ex.name}</div>
+              <div class="exercise-target">${exTargetLine(ex)}</div>
             </div>
-            <div class="timer-controls">
-              <button class="timer-btn" onclick="addTime(15)">+15s</button>
-              <button class="timer-btn" onclick="stopTimer()">Skip</button>
-            </div>
+            <div class="exercise-status ${mAll ? 'done' : ''}" id="exStatus-${ex.id}">${mAll ? '✓' : `${mDone}/${ex.sets}`}</div>
           </div>
+          ${exCuesNoteHtml(ex, note)}
+          ${exSetTableHtml(ex, sets, lastEx)}
+          ${exTimerHtml(ex)}
+          ${exActionsHtml(ex, note)}
+        </div>`;
+      }).join('');
+      const allDone = done === total && state.activeWorkout;
+      const wrap = document.createElement('div');
+      wrap.className = 'exercise superset';
+      wrap.dataset.exid = firstId;
+      wrap.innerHTML = `
+      <div class="exercise-header" onclick="toggleExercise('${firstId}')">
+        <div style="flex:1; min-width:0;">
+          <div class="exercise-name">🔗 Supersatz ${grp}</div>
+          <div class="exercise-target">${unit.items.map(e => e.name).join(' + ')}</div>
         </div>
-        <div class="exercise-actions">
-          <button class="btn-small btn-ghost" onclick="openNotesModal('${ex.id}')">📝 ${note ? 'Notiz bearbeiten' : 'Notiz hinzufügen'}</button>
-          <span class="alt-text">Alt: ${ex.alt}</span>
-        </div>
+        <div class="exercise-status ${allDone ? 'done' : ''}" id="ssStatus-${firstId}">${allDone ? '✓' : `${done}/${total}`}</div>
       </div>
-    `;
-    // Open-State wiederherstellen (Bug-Fix): nur das öffnen, was wirklich offen ist
-    if (openExercises.has(ex.id)) wrap.classList.add('open');
-    list.appendChild(wrap);
+      <div class="exercise-body">
+        ${moves}
+      </div>`;
+      if (openExercises.has(firstId)) wrap.classList.add('open');
+      list.appendChild(wrap);
+    }
   });
 
   // Übungen starten immer eingeklappt — erst beim Antippen öffnen.
@@ -2307,10 +2421,30 @@ function updateExerciseStatus(exId) {
   const total = exDef ? exDef.sets : ex.sets.length;
   const done = ex.sets.filter(s => s.done).length;
   const allDone = done === total;
-  const badge = document.querySelector(`.exercise[data-exid="${exId}"] .exercise-status`);
+  const badge = document.getElementById('exStatus-' + exId);
   if (badge) {
     badge.textContent = allDone ? '✓' : `${done}/${total}`;
     badge.classList.toggle('done', allDone);
+  }
+  if (exDef && exDef.group) updateSupersetStatus(exDef.group);
+}
+function updateSupersetStatus(group) {
+  if (!state.activeWorkout) return;
+  const day = getDay(state.activeWorkout.dayIdx);
+  if (!day) return;
+  const members = day.exercises.filter(e => e.group === group);
+  if (members.length < 2) return;
+  let done = 0, total = 0;
+  members.forEach(m => {
+    total += m.sets;
+    const aw = state.activeWorkout.exercises.find(e => e.id === m.id);
+    if (aw) done += aw.sets.filter(s => s.done).length;
+  });
+  const badge = document.getElementById('ssStatus-' + members[0].id);
+  if (badge) {
+    const all = done === total;
+    badge.textContent = all ? '✓' : `${done}/${total}`;
+    badge.classList.toggle('done', all);
   }
 }
 
@@ -2331,7 +2465,11 @@ function toggleSet(exId, setIdx, rest) {
   updateExerciseStatus(exId);
   document.getElementById('finishWorkoutBtn').style.display = 'block';
   document.getElementById('abortWorkoutBtn').style.display = 'block';
-  if (s.done) startTimer(exId, rest);
+  // Bei WOD-Formaten (For Time/AMRAP/EMOM/Runden) keinen Satz-Pausen-Timer:
+  // dort taktet die Stoppuhr oben, Ergebnisse werden danach eingetragen.
+  const curDay = getDay(state.activeWorkout.dayIdx);
+  const isWod = curDay && curDay.format && curDay.format !== 'standard';
+  if (s.done && rest > 0 && !isWod) startTimer(exId, rest);
 }
 
 /* ----- TIMER mit visuellem Ablauf ----- */
@@ -2339,20 +2477,24 @@ function startTimer(exId, seconds) {
   stopTimer();
   document.querySelectorAll('.timer').forEach(t => t.style.display = 'none');
   const el = document.getElementById('timer-' + exId);
-  const val = document.getElementById('timerVal-' + exId);
-  const fill = document.getElementById('timerFill-' + exId);
-  if (!el || !val) return;
+  if (!el) return;
   el.style.display = 'block';
+  timerExId = exId;
   timerTotal = seconds;
   timerEnd = Date.now() + seconds * 1000;
   const tick = () => {
+    // Elemente bei jedem Tick frisch holen, damit der Timer auch nach einem
+    // Neu-Rendern (z.B. Notiz speichern) sichtbar bleibt und weiterzählt.
+    const elNow = document.getElementById('timer-' + timerExId);
+    const val = document.getElementById('timerVal-' + timerExId);
+    const fill = document.getElementById('timerFill-' + timerExId);
+    if (elNow && elNow.style.display === 'none') elNow.style.display = 'block';
     const leftMs = Math.max(0, timerEnd - Date.now());
     const left = Math.ceil(leftMs / 1000);
-    val.textContent = left + 's';
+    if (val) val.textContent = left + 's';
     if (fill) {
       const pct = Math.max(0, Math.min(100, (leftMs / (timerTotal * 1000)) * 100));
       fill.style.width = pct + '%';
-      // Farbe wechselt zum Ende hin
       fill.style.background = pct < 25 ? 'var(--success)' : 'var(--accent)';
     }
     if (leftMs <= 0) {
@@ -2394,6 +2536,7 @@ function addTime(s) {
 function stopTimer() {
   clearInterval(timerInterval);
   timerInterval = null;
+  timerExId = null;
   document.querySelectorAll('.timer').forEach(t => t.style.display = 'none');
 }
 
@@ -2912,6 +3055,7 @@ function buildAiPrompt() {
   const bodyweight = equip === 'Nur Körpergewicht';
   const showSplit = !isHyrox;
   const showStyle = !isHyrox && !bodyweight;
+  const showCardio = !isHyrox;
   let extra = '';
   if (formats === 'KI entscheidet')
     extra += `\n- Kondi-/WOD-Formate: nach deinem Ermessen einbauen, wo sinnvoll`;
@@ -2923,7 +3067,7 @@ function buildAiPrompt() {
   if (showSplit) tl.push(`- ${splitLine}`);
   tl.push(`- Equipment: ${equip}`, `- Dauer pro Einheit: ${dur}`, `- Level: ${level}`);
   if (showStyle) tl.push(`- Trainingsstil: ${style}`);
-  tl.push(`- Kardio: ${cardio}`);
+  if (showCardio) tl.push(`- Kardio: ${cardio}`);
   const trainingBlock = tl.join('\n') + extra + (special ? `\n- Besonderheiten: ${special}` : '');
 
   return `Erstelle mir einen Trainingsplan UND passende Ernährungsvorschläge.
@@ -2945,7 +3089,9 @@ und stelle die Ausgabe ZUSÄTZLICH als herunterladbare .json-Datei bereit:
   "days": [
     { "code": "GK1", "name": "Ganzkörper A", "weekday": "Mo", "exercises": [
       { "name": "Bankdrücken", "sets": 4, "reps": "6-8", "rpe": "8", "rest": 180, "cues": "...", "alt": "..." },
-      { "name": "Laufband – lockeres Cardio", "type": "cardio", "metrics": ["time","dist_km"], "sets": 1, "target": "20 Min, Zone 2", "rest": 0, "cues": "...", "alt": "..." }
+      { "name": "Laufband – lockeres Cardio", "type": "cardio", "metrics": ["time","dist_km"], "sets": 1, "target": "20 Min, Zone 2", "rest": 0, "cues": "...", "alt": "..." },
+      { "name": "Bizeps Curl", "group": "A", "sets": 3, "reps": "10-12", "rpe": "9", "rest": 0, "cues": "...", "alt": "..." },
+      { "name": "Trizeps Pushdown", "group": "A", "sets": 3, "reps": "10-12", "rpe": "9", "rest": 90, "cues": "...", "alt": "..." }
     ]},
     { "code": "WOD", "name": "Hybrid-Finisher", "weekday": "Fr", "format": "amrap", "timeCap": 12, "exercises": [
       { "name": "Wall Balls", "type": "functional", "metrics": ["reps","weight"], "sets": 1, "target": "15 Wdh.", "rest": 0, "cues": "...", "alt": "..." },
@@ -2970,6 +3116,8 @@ und ein kurzes "target" setzen (z.B. "20 Min, Zone 2" oder "50 m Sled, schwer").
 Setze die gewünschte Kardio-Vorgabe als eigene cardio-Übung(en) bzw. Warm-up/Cool-down um.
 Workout-Format pro Tag (optional): "format" ist "standard" (Standard, weglassbar), "for_time", "amrap", "emom" oder "rounds".
 Bei "amrap"/"emom" zusätzlich "timeCap" (Minuten), bei "rounds" zusätzlich "rounds" (Anzahl). Nur für Hybrid-/HYROX-/Konditions-Tage nutzen.
+Supersätze: zwei (oder mehr) aufeinanderfolgende Übungen mit gleichem "group"-Buchstaben (z.B. "A") kennzeichnen;
+bei allen außer der letzten der Gruppe "rest": 0, bei der letzten die echte Pausenzeit.
 Pro Trainingstag 4-7 Übungen. Pro Ernährungstag 4-6 Mahlzeiten, deren kcal-Summe nahe am Ziel liegt.
 Gib nur das JSON aus, sonst nichts.`;
 }
@@ -2980,8 +3128,10 @@ function refreshAiVisibility() {
   const bodyweight = aiVal('aiEquipment', '') === 'Nur Körpergewicht';
   const gSplit = document.getElementById('grpSplit');
   const gStyle = document.getElementById('grpStyle');
+  const gCardio = document.getElementById('grpCardio');
   if (gSplit) gSplit.style.display = isHyrox ? 'none' : '';
   if (gStyle) gStyle.style.display = (isHyrox || bodyweight) ? 'none' : '';
+  if (gCardio) gCardio.style.display = isHyrox ? 'none' : '';
 }
 function refreshAiPrompt() {
   refreshAiVisibility();
@@ -3070,6 +3220,9 @@ function setActivePlan(id) {
   renderPlansList();
   showToast("✓ Plan aktiviert");
   renderToday();
+  state.selectedMealDay = 0;
+  const nv = document.getElementById('view-nutrition');
+  if (nv && nv.classList.contains('active')) renderNutrition();
 }
 function deletePlan(id) {
   if (id === 'default') return;
@@ -3111,6 +3264,7 @@ function validateAndNormalizePlan(obj) {
       };
       if (metrics.length) norm.metrics = metrics;
       if (e.target) norm.target = String(e.target).slice(0,80);
+      if (e.group) norm.group = String(e.group).slice(0,4);
       return norm;
     });
     const day = {
@@ -3134,6 +3288,7 @@ function importPlan(event) {
     try {
       const data = JSON.parse(e.target.result);
       const did = [];
+      let createdPlan = null;
       // Trainingsplan (falls 'days' vorhanden)
       if (data && Array.isArray(data.days) && data.days.length) {
         const plan = validateAndNormalizePlan(data);
@@ -3141,12 +3296,14 @@ function importPlan(event) {
         state.activePlanId = plan.id;
         state.currentDayIdx = 0;
         openExercises.clear();
+        createdPlan = plan;
         did.push(`Plan „${plan.name}"`);
       }
       // Ernährungsplan (falls 'mealPlan' vorhanden)
       const mp = sanitizeMealPlan(data && data.mealPlan);
       if (mp) {
-        state.mealPlan = mp;
+        if (createdPlan) createdPlan.mealPlan = mp;   // an den importierten Trainingsplan koppeln
+        else state.mealPlan = mp;                      // eigenständiger Ernährungs-Import (ohne Trainingsplan)
         state.selectedMealDay = 0;
         did.push("Ernährungsplan");
       }
@@ -3196,6 +3353,7 @@ function exportActivePlan() {
         const o = { name: e.name };
         if (e.type && e.type !== 'strength') o.type = e.type;
         if (Array.isArray(e.metrics) && e.metrics.length) o.metrics = e.metrics;
+        if (e.group) o.group = e.group;
         o.sets = e.sets; o.reps = e.reps; o.rpe = e.rpe; o.rest = e.rest;
         if (e.target) o.target = e.target;
         o.cues = e.cues; o.alt = e.alt;
@@ -3204,6 +3362,7 @@ function exportActivePlan() {
       return od;
     })
   };
+  if (Array.isArray(pl.mealPlan) && pl.mealPlan.length) out.mealPlan = pl.mealPlan;
   const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -3333,7 +3492,9 @@ function renderNutrition() {
 
   // Meal plan (Raster, kein Sliden) — eigener Plan (Import) oder statische Vorschläge
   const MP = getMealPlan();
-  const custom = Array.isArray(state.mealPlan) && state.mealPlan.length > 0;
+  const ap = getActivePlan();
+  const custom = !!(ap && Array.isArray(ap.mealPlan) && ap.mealPlan.length) ||
+                 (Array.isArray(state.mealPlan) && state.mealPlan.length > 0);
   if (state.selectedMealDay >= MP.length) state.selectedMealDay = 0;
   const planList = document.getElementById('mealPlan');
   const day = MP[state.selectedMealDay];
@@ -3360,10 +3521,15 @@ function renderNutrition() {
 }
 
 function getMealPlan() {
-  return (Array.isArray(state.mealPlan) && state.mealPlan.length) ? state.mealPlan : MEAL_PLAN;
+  const pl = getActivePlan();
+  if (pl && Array.isArray(pl.mealPlan) && pl.mealPlan.length) return pl.mealPlan;
+  if (Array.isArray(state.mealPlan) && state.mealPlan.length) return state.mealPlan;
+  return MEAL_PLAN;
 }
 function resetMealPlan() {
   if (!confirm("Eigenen Ernährungsplan entfernen und Standard-Vorschläge zeigen?")) return;
+  const pl = getActivePlan();
+  if (pl && pl.mealPlan) delete pl.mealPlan;
   state.mealPlan = null;
   state.selectedMealDay = 0;
   saveState();
