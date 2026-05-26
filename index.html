@@ -1394,6 +1394,33 @@ input[type="range"]::-moz-range-thumb {
     </div>
     <div id="cyclingInfo" style="font-size:12px; color:var(--text-dim); line-height:1.5;"></div>
 
+    <div id="cycleSection">
+      <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
+      <div style="font-family:'Sora'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Zyklustraining</div>
+      <div class="input-group">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <input type="checkbox" id="setCycleTraining" onchange="updateCycleSettings()" style="width:auto; transform:scale(1.4);">
+          <span style="font-size:14px; color:var(--text-dim);">Plan automatisch nach Zyklusphase umschalten (2 Pläne)</span>
+        </div>
+      </div>
+      <div id="cycleFields" style="display:none;">
+        <div class="input-group">
+          <label>Beginn der letzten Periode</label>
+          <input type="date" id="setPeriodStart" onchange="updateCycleSettings()">
+        </div>
+        <button class="btn btn-small btn-ghost" style="width:auto; margin-bottom:12px;" onclick="setPeriodToday()">Periode heute begonnen</button>
+        <div class="input-group">
+          <label>Zykluslänge: <span id="cycleLenLabel" class="mono">28</span> Tage</label>
+          <input type="range" id="setCycleLen" min="21" max="35" step="1" value="28" oninput="onCycleLenInput()" onchange="updateCycleSettings()" style="width:100%;">
+        </div>
+        <div id="cyclePhaseInfo" style="font-size:12px; color:var(--text-dim); line-height:1.5;"></div>
+        <div style="font-size:11px; color:var(--text-faint); line-height:1.5; margin-top:8px;">
+          Schätzung anhand deiner Angaben – keine medizinische Vorgabe. Manuelles Umschalten hat immer Vorrang.
+          Daten bleiben nur lokal auf diesem Gerät.
+        </div>
+      </div>
+    </div>
+
     <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
     <div style="font-family:'Sora'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Signalton</div>
     <div class="input-group">
@@ -1447,7 +1474,7 @@ input[type="range"]::-moz-range-thumb {
     <div style="height:8px"></div>
     <button class="btn btn-secondary btn-small" onclick="exportActivePlan()" style="width:100%;">⬇ Aktiven Plan exportieren</button>
     <div style="height:14px"></div>
-    <button class="btn btn-secondary" onclick="closePlansModal()">Schließen</button>
+    <button class="btn btn-secondary" onclick="backToSettings()">← Zurück zu Einstellungen</button>
   </div>
 </div>
 
@@ -1544,6 +1571,13 @@ input[type="range"]::-moz-range-thumb {
       <label>Besonderheiten (optional)</label>
       <input type="text" id="aiSpecial" placeholder="z.B. Schulter schonen, montags wenig Zeit" oninput="refreshAiPrompt()">
     </div>
+    <div class="input-group">
+      <label>Zyklusbasiert (für Frauen)</label>
+      <select id="aiCyclePlan" onchange="refreshAiPrompt()">
+        <option>Aus</option>
+        <option>Ein – 2 Phasen-Pläne (Follikel & Luteal)</option>
+      </select>
+    </div>
 
     <div style="margin:18px 0 10px; padding-top:14px; border-top:1px solid var(--border); font-family:'Sora',sans-serif; font-weight:700; font-size:14px;">Ernährung</div>
 
@@ -1591,7 +1625,7 @@ input[type="range"]::-moz-range-thumb {
       Tipp: Wenn die KI Text drumherum ausgibt, sag ihr „gib mir nur das reine JSON, ohne Erklärung".
     </div>
     <div style="height:14px"></div>
-    <button class="btn btn-secondary" onclick="closeAiPlanModal()">Schließen</button>
+    <button class="btn btn-secondary" onclick="backToPlans()">← Zurück zu Pläne</button>
   </div>
 </div>
 
@@ -2003,6 +2037,9 @@ function normalizeState() {
   if (typeof state.settings.soundEnabled !== 'boolean') state.settings.soundEnabled = true;
   if (typeof state.settings.cycling !== 'boolean') state.settings.cycling = true;
   if (typeof state.settings.cyclingBump !== 'number') state.settings.cyclingBump = 250;
+  if (typeof state.settings.cycleTraining !== 'boolean') state.settings.cycleTraining = false;
+  if (!state.cycle || typeof state.cycle !== 'object') state.cycle = { lastPeriodStart: null, cycleLength: 28, autoDate: null };
+  if (typeof state.cycle.cycleLength !== 'number') state.cycle.cycleLength = 28;
 
   // --- Plan-Migration (alte Versionen: kein state.plans) ---
   if (!Array.isArray(state.plans) || state.plans.length === 0) {
@@ -2129,6 +2166,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
    TODAY VIEW
    ================================================================= */
 function renderToday() {
+  applyCycleAutoSelect();
   // Date
   document.getElementById('todayDate').textContent =
     new Date().toLocaleDateString('de-DE', { weekday:'short', day:'2-digit', month:'short'}).toUpperCase();
@@ -2178,8 +2216,10 @@ function renderToday() {
   });
 
   document.getElementById('todayWorkoutName').textContent = getDay(state.currentDayIdx)?.name || '—';
+  const cycInfo = (state.settings.cycleTraining && state.profile.sex === 'f') ? currentCyclePhase() : null;
   document.getElementById('todaySubtitle').textContent =
-    state.activeWorkout ? 'Training läuft — antippen zum Fortsetzen' : 'Übersicht & Schnellstart';
+    cycInfo ? `🌙 Zyklustag ${cycInfo.cycleDay} · ${cycInfo.label}` :
+    (state.activeWorkout ? 'Training läuft — antippen zum Fortsetzen' : 'Übersicht & Schnellstart');
 
   document.getElementById('startWorkoutBtn').textContent =
     state.activeWorkout ? '▶ Training fortsetzen' : '▶ Training starten';
@@ -2795,6 +2835,14 @@ function openSettings() {
   document.getElementById('setBump').value = state.settings.cyclingBump;
   document.getElementById('bumpLabel').textContent = state.settings.cyclingBump;
   renderCyclingInfo();
+  // Zyklustraining
+  document.getElementById('cycleSection').style.display = (state.profile.sex === 'f') ? 'block' : 'none';
+  document.getElementById('setCycleTraining').checked = !!state.settings.cycleTraining;
+  document.getElementById('setPeriodStart').value = state.cycle.lastPeriodStart || '';
+  document.getElementById('setCycleLen').value = state.cycle.cycleLength || 28;
+  document.getElementById('cycleLenLabel').textContent = state.cycle.cycleLength || 28;
+  document.getElementById('cycleFields').style.display = state.settings.cycleTraining ? 'block' : 'none';
+  renderCyclePhaseInfo();
   // Profil befüllen
   const p = state.profile;
   document.getElementById('pfName').value = p.name || '';
@@ -2855,6 +2903,74 @@ function updateSettings() {
   renderCyclingInfo();
   renderToday();
   if (document.getElementById('view-nutrition').classList.contains('active')) renderNutrition();
+}
+
+/* ----- Zyklustraining: Phasen-Berechnung + Auto-Umschaltung ----- */
+function currentCyclePhase() {
+  const c = state.cycle;
+  if (!c || !c.lastPeriodStart) return null;
+  const len = Math.max(21, Math.min(35, c.cycleLength || 28));
+  const start = new Date(c.lastPeriodStart + 'T00:00:00');
+  const today = new Date(todayStr() + 'T00:00:00');
+  if (isNaN(start)) return null;
+  const diff = Math.floor((today - start) / 86400000);
+  const cd = ((diff % len) + len) % len + 1; // 1-basierter Zyklustag
+  const ovul = Math.round(len / 2);
+  let phase, label;
+  if (cd <= 5)        { phase = 'luteal';     label = 'Menstruation'; }
+  else if (cd <= ovul){ phase = 'follicular'; label = 'Follikelphase (mehr Energie)'; }
+  else                { phase = 'luteal';     label = 'Lutealphase (ruhiger)'; }
+  return { cycleDay: cd, phase, label, len };
+}
+function cyclePlanFor(phase) {
+  return (state.plans || []).find(p => p.cyclePhase === phase);
+}
+function applyCycleAutoSelect() {
+  if (!state.settings.cycleTraining || state.profile.sex !== 'f') return;
+  if (state.activeWorkout) return;            // nie mitten im Training wechseln
+  const info = currentCyclePhase();
+  if (!info) return;
+  const today = todayStr();
+  if (state.cycle.autoDate === today) return; // pro Tag nur einmal automatisch
+  state.cycle.autoDate = today;
+  const target = cyclePlanFor(info.phase);
+  if (target && state.activePlanId !== target.id) {
+    state.activePlanId = target.id;
+    state.currentDayIdx = 0;
+    openExercises.clear();
+  }
+  saveState();
+}
+function renderCyclePhaseInfo() {
+  const el = document.getElementById('cyclePhaseInfo');
+  if (!el) return;
+  const info = currentCyclePhase();
+  if (!info) { el.innerHTML = 'Bitte „Beginn der letzten Periode" angeben.'; return; }
+  const target = cyclePlanFor(info.phase);
+  el.innerHTML = `Heute: <b style="color:var(--text)">Zyklustag ${info.cycleDay}</b> · <b style="color:var(--accent)">${info.label}</b><br>`
+    + (target
+        ? `→ aktiver Plan: <b style="color:var(--text)">${target.name}</b>`
+        : `→ ⚠ Noch kein Plan für diese Phase importiert (Plan mit <code>cyclePhase</code> „${info.phase}").`);
+}
+function updateCycleSettings() {
+  state.settings.cycleTraining = document.getElementById('setCycleTraining').checked;
+  const ds = document.getElementById('setPeriodStart').value;
+  state.cycle.lastPeriodStart = ds || null;
+  state.cycle.cycleLength = parseInt(document.getElementById('setCycleLen').value, 10) || 28;
+  state.cycle.autoDate = null; // erlaubt sofortige Neu-Anwendung
+  document.getElementById('cycleFields').style.display = state.settings.cycleTraining ? 'block' : 'none';
+  saveState();
+  renderCyclePhaseInfo();
+  applyCycleAutoSelect();
+  renderToday();
+}
+function setPeriodToday() {
+  document.getElementById('setPeriodStart').value = todayStr();
+  updateCycleSettings();
+  showToast("✓ Periodenbeginn auf heute gesetzt");
+}
+function onCycleLenInput() {
+  document.getElementById('cycleLenLabel').textContent = document.getElementById('setCycleLen').value;
 }
 
 /* =================================================================
@@ -2938,6 +3054,8 @@ function saveProfile() {
   document.getElementById('targetPreview').textContent =
     `Neu: ${state.targets.kcal} kcal · ${state.targets.protein}P / ${state.targets.fat}F / ${state.targets.carbs}C`;
   document.getElementById('settingsOwner').textContent = p.name || 'nicht gesetzt';
+  const cs = document.getElementById('cycleSection');
+  if (cs) cs.style.display = (p.sex === 'f') ? 'block' : 'none';
   showToast("✓ Profil gespeichert");
   renderToday();
 }
@@ -3049,6 +3167,10 @@ function openPlansModal() {
 function closePlansModal() {
   document.getElementById('plansModal').classList.remove('active');
 }
+function backToSettings() {
+  closePlansModal();
+  openSettings();
+}
 
 /* ----- Plan per KI erstellen: dynamischer Prompt aus Eingabemaske ----- */
 function aiVal(id, fallback) {
@@ -3099,6 +3221,17 @@ function buildAiPrompt() {
   if (meals !== 'KI entscheidet') nutPrefs += `\n- Mahlzeiten pro Tag: ${meals}`;
   if (likes) nutPrefs += `\n- Vorlieben: ${likes}`;
   if (avoid) nutPrefs += `\n- Vermeiden / Unverträglichkeiten (strikt): ${avoid}`;
+  const cyclePlan = aiVal('aiCyclePlan', 'Aus');
+  const cycleBlock = cyclePlan.startsWith('Ein')
+    ? `\nZYKLUSBASIERT: Gib statt eines einzelnen Plans ein "plans"-Array mit GENAU 2 Trainingsplänen aus:
+- Plan mit "cyclePhase": "follicular" (Follikelphase / mehr Energie): höhere Intensität & Lasten, schwere Grundübungen, ggf. PR-Versuche.
+- Plan mit "cyclePhase": "luteal" (Menstruation / Lutealphase / ruhiger): geringere Intensität, mehr Technik/Volumen/Mobility, moderate Lasten.
+Beide Pläne mit gleicher Tagesanzahl/Struktur. Wrapper-Format:
+{ "type": "ironlog-plan", "schemaVersion": 2, "plans": [
+  { "name": "...", "cyclePhase": "follicular", "days": [ ... ] },
+  { "name": "...", "cyclePhase": "luteal", "days": [ ... ] }
+], "mealPlan": [ ... ] }`
+    : '';
   const splitLine = split.startsWith('Automatisch')
     ? 'Split: wähle einen sinnvollen Split passend zur Tagesanzahl'
     : `Split: ${split}`;
@@ -3171,7 +3304,7 @@ Supersätze: zwei (oder mehr) aufeinanderfolgende Übungen mit gleichem "group"-
 bei allen außer der letzten der Gruppe "rest": 0, bei der letzten die echte Pausenzeit.
 Pro Trainingstag 4-7 Übungen. Pro Ernährungstag so viele Mahlzeiten wie gewünscht (sonst 4-6), kcal-Summe nahe am Ziel.
 Die Anzahl der Tageseinträge in "mealPlan" richtet sich nach dem gewünschten Umfang (z.B. 7 Einträge bei „ganze Woche").
-Halte Kostform und Vermeidungen strikt ein.
+Halte Kostform und Vermeidungen strikt ein.${cycleBlock}
 Gib nur das JSON aus, sonst nichts.`;
 }
 
@@ -3225,6 +3358,10 @@ function openAiPlanModal() {
 function closeAiPlanModal() {
   document.getElementById('aiPlanModal').classList.remove('active');
 }
+function backToPlans() {
+  closeAiPlanModal();
+  openPlansModal();
+}
 async function copyAiPrompt() {
   const text = document.getElementById('aiPromptText').value;
   try {
@@ -3253,11 +3390,13 @@ function renderPlansList() {
     const active = pl.id === state.activePlanId;
     const dayCount = pl.days.length;
     const exCount = pl.days.reduce((s,d) => s + d.exercises.length, 0);
+    const phaseLbl = pl.cyclePhase === 'follicular' ? ' · 🌙 Follikel (mehr Energie)'
+                   : pl.cyclePhase === 'luteal' ? ' · 🌙 Menstruation/Luteal (ruhiger)' : '';
     return `
       <div class="food-item" onclick="setActivePlan('${pl.id}')" style="${active?'border-color:var(--accent);':''}">
         <div style="flex:1; min-width:0;">
           <div class="food-name">${active ? '✓ ' : ''}${pl.name}</div>
-          <div class="food-macro">${dayCount} Tage · ${exCount} Übungen</div>
+          <div class="food-macro">${dayCount} Tage · ${exCount} Übungen${phaseLbl}</div>
         </div>
         ${pl.id !== 'default' ? `<button onclick="event.stopPropagation(); deletePlan('${pl.id}')" style="background:none;border:none;color:var(--text-faint);font-size:18px;cursor:pointer;padding:0 4px;">×</button>` : '<span class="food-macro">Standard</span>'}
       </div>`;
@@ -3331,7 +3470,9 @@ function validateAndNormalizePlan(obj) {
     const rd = parseInt(d.rounds);  if (rd > 0) day.rounds = Math.min(99, rd);
     return day;
   });
-  return { id: planId, name: String(obj.name || "Importierter Plan").slice(0,60), days };
+  const plan = { id: planId, name: String(obj.name || "Importierter Plan").slice(0,60), days };
+  if (['follicular','luteal'].includes(obj.cyclePhase)) plan.cyclePhase = obj.cyclePhase;
+  return plan;
 }
 function importPlan(event) {
   const file = event.target.files[0];
@@ -3342,8 +3483,27 @@ function importPlan(event) {
       const data = JSON.parse(e.target.result);
       const did = [];
       let createdPlan = null;
-      // Trainingsplan (falls 'days' vorhanden)
-      if (data && Array.isArray(data.days) && data.days.length) {
+      // Mehrere Pläne (z.B. Zyklus-Phasenpläne) via plans-Array
+      if (data && Array.isArray(data.plans) && data.plans.length) {
+        let first = null;
+        data.plans.forEach(pe => {
+          if (!pe || !Array.isArray(pe.days) || !pe.days.length) return;
+          const plan = validateAndNormalizePlan(pe);
+          const mpp = sanitizeMealPlan(pe.mealPlan);
+          if (mpp) plan.mealPlan = mpp;
+          state.plans.push(plan);
+          if (!first) first = plan;
+        });
+        if (first) {
+          state.activePlanId = first.id;
+          state.currentDayIdx = 0;
+          openExercises.clear();
+          createdPlan = first;
+          did.push(`${data.plans.length} Pläne`);
+        }
+      }
+      // Einzelner Trainingsplan (falls 'days' vorhanden)
+      else if (data && Array.isArray(data.days) && data.days.length) {
         const plan = validateAndNormalizePlan(data);
         state.plans.push(plan);
         state.activePlanId = plan.id;
@@ -3416,6 +3576,7 @@ function exportActivePlan() {
     })
   };
   if (Array.isArray(pl.mealPlan) && pl.mealPlan.length) out.mealPlan = pl.mealPlan;
+  if (pl.cyclePhase) out.cyclePhase = pl.cyclePhase;
   const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
