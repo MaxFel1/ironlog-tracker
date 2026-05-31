@@ -292,6 +292,12 @@ main { padding: 20px; }
   font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
   padding: 1px 6px; border-radius: 6px; margin-right: 5px;
 }
+.hold-row { display: flex; gap: 8px; align-items: center; margin: 10px 0 2px; }
+.hold-input {
+  width: 84px; background: var(--bg-inset); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px; color: var(--text);
+  font-family: 'JetBrains Mono', monospace; text-align: center;
+}
 
 .cues {
   font-size: 13px;
@@ -1762,7 +1768,7 @@ const DEFAULT_PLAN = {
         { id: "la3", name: "Beinpresse", sets: 3, reps: "10-12", rpe: "9", rest: 120, cues: "Fußposition mittig, kontrolliertes Tempo", alt: "Hack Squat" },
         { id: "la4", name: "Beinbeuger liegend", sets: 3, reps: "10-12", rpe: "9", rest: 90, cues: "Hüfte gepresst, volle Kontraktion", alt: "Beinbeuger sitzend" },
         { id: "la5", name: "Wadenheben stehend", sets: 4, reps: "10-12", rpe: "9", rest: 60, cues: "Volle Range, 1 Sek Pause oben", alt: "Wadenheben Beinpresse" },
-        { id: "la6", name: "Plank", sets: 3, reps: "45-60s", rpe: "8", rest: 60, cues: "Bauch anspannen, gerade Linie", alt: "Hanging Leg Raise" }
+        { id: "la6", name: "Plank", type: "bodyweight", metrics: ["time_s"], target: "45–60 Sek halten", sets: 3, reps: "45-60s", rpe: "8", rest: 60, cues: "Bauch anspannen, gerade Linie", alt: "Hanging Leg Raise" }
       ]
     },
     {
@@ -2318,6 +2324,7 @@ let timerInterval = null;
 let timerEnd = 0;
 let timerTotal = 0;
 let timerExId = null;
+let timerLabelText = 'Pause läuft';
 let openExercises = new Set();   // welche Übungen sind aufgeklappt (Laufzeit)
 
 /* =================================================================
@@ -2328,6 +2335,7 @@ const METRICS = {
   weight:  { key:'w',       label:'Gewicht',  unit:'kg',   step:'0.5', mode:'decimal' },
   reps:    { key:'r',       label:'Wdh.',     unit:'',     step:'1',   mode:'numeric' },
   time:    { key:'time',    label:'Zeit',     unit:'min',  step:'0.5', mode:'decimal' },
+  time_s:  { key:'time_s',  label:'Zeit',     unit:'sek',  step:'1',   mode:'numeric' },
   dist_km: { key:'dist_km', label:'Distanz',  unit:'km',   step:'0.1', mode:'decimal' },
   dist_m:  { key:'dist_m',  label:'Distanz',  unit:'m',    step:'5',   mode:'numeric' },
   watt:    { key:'watt',    label:'Leistung', unit:'W',    step:'5',   mode:'numeric' },
@@ -2392,7 +2400,7 @@ function exTimerHtml(ex) {
           <div class="timer-track"><div class="timer-fill" id="timerFill-${ex.id}"></div></div>
           <div class="timer-row">
             <div>
-              <div class="timer-label">Pause läuft</div>
+              <div class="timer-label" id="timerLabel-${ex.id}">Pause läuft</div>
               <div class="timer-value" id="timerVal-${ex.id}">${ex.rest}s</div>
             </div>
             <div class="timer-controls">
@@ -2401,6 +2409,25 @@ function exTimerHtml(ex) {
             </div>
           </div>
         </div>`;
+}
+function holdSeconds(ex) {
+  const src = (ex.target || ex.reps || '').toString();
+  const nums = src.match(/\d+/g);
+  if (nums && nums.length) return Math.max(5, Math.min(600, parseInt(nums[nums.length - 1])));
+  return 60;
+}
+function exHoldHtml(ex) {
+  if (!exMetrics(ex).includes('time_s')) return '';
+  return `<div class="hold-row">
+          <input type="number" inputmode="numeric" id="holdSec-${ex.id}" class="hold-input" value="${holdSeconds(ex)}" min="5" max="600" step="5">
+          <span style="font-size:12px; color:var(--text-dim);">Sek</span>
+          <button class="btn btn-small" style="width:auto;" onclick="startHold('${ex.id}')">▶ Halten</button>
+        </div>`;
+}
+function startHold(exId) {
+  const inp = document.getElementById('holdSec-' + exId);
+  const sec = Math.max(1, parseInt(inp && inp.value) || 60);
+  startTimer(exId, sec, 'Halten');
 }
 function exActionsHtml(ex, note) {
   return `<div class="exercise-actions">
@@ -2471,6 +2498,7 @@ function renderTraining() {
       <div class="exercise-body">
         ${exCuesNoteHtml(ex, note)}
         ${exSetTableHtml(ex, sets, lastEx)}
+        ${exHoldHtml(ex)}
         ${exTimerHtml(ex)}
         ${exActionsHtml(ex, note)}
       </div>`;
@@ -2498,6 +2526,7 @@ function renderTraining() {
           </div>
           ${exCuesNoteHtml(ex, note)}
           ${exSetTableHtml(ex, sets, lastEx)}
+          ${exHoldHtml(ex)}
           ${exTimerHtml(ex)}
           ${exActionsHtml(ex, note)}
         </div>`;
@@ -2626,7 +2655,7 @@ function toggleSet(exId, setIdx, rest) {
 }
 
 /* ----- TIMER mit visuellem Ablauf ----- */
-function startTimer(exId, seconds) {
+function startTimer(exId, seconds, label) {
   stopTimer();
   document.querySelectorAll('.timer').forEach(t => t.style.display = 'none');
   const el = document.getElementById('timer-' + exId);
@@ -2634,6 +2663,7 @@ function startTimer(exId, seconds) {
   el.style.display = 'block';
   timerExId = exId;
   timerTotal = seconds;
+  timerLabelText = label || 'Pause läuft';
   timerEnd = Date.now() + seconds * 1000;
   const tick = () => {
     // Elemente bei jedem Tick frisch holen, damit der Timer auch nach einem
@@ -2641,7 +2671,9 @@ function startTimer(exId, seconds) {
     const elNow = document.getElementById('timer-' + timerExId);
     const val = document.getElementById('timerVal-' + timerExId);
     const fill = document.getElementById('timerFill-' + timerExId);
+    const lab = document.getElementById('timerLabel-' + timerExId);
     if (elNow && elNow.style.display === 'none') elNow.style.display = 'block';
+    if (lab) lab.textContent = timerLabelText;
     const leftMs = Math.max(0, timerEnd - Date.now());
     const left = Math.ceil(leftMs / 1000);
     if (val) val.textContent = left + 's';
@@ -2654,7 +2686,7 @@ function startTimer(exId, seconds) {
       stopTimer();
       playBeep();
       if (navigator.vibrate) navigator.vibrate([200,100,200]);
-      showToast("⏰ Pause vorbei");
+      showToast(timerLabelText === 'Halten' ? "⏰ Halt geschafft!" : "⏰ Pause vorbei");
     }
   };
   tick();
@@ -3382,8 +3414,9 @@ und stelle die Ausgabe ZUSÄTZLICH als herunterladbare .json-Datei bereit:
 Regeln: "type" exakt "ironlog-plan". "rest" in Sekunden (Zahl). "reps"/"rpe" als Text.
 "weekday" als Mo/Di/Mi/Do/Fr/Sa/So. Verteile die Trainingstage sinnvoll über die Woche.
 Übungstypen: "type" je Übung ist "strength" (Standard, weglassbar), "cardio", "functional" oder "bodyweight".
-Für Nicht-Kraft die passenden Einheiten in "metrics" angeben (erlaubt: weight, reps, time, dist_km, dist_m, watt, kcal, hr)
+Für Nicht-Kraft die passenden Einheiten in "metrics" angeben (erlaubt: weight, reps, time, time_s, dist_km, dist_m, watt, kcal, hr)
 und ein kurzes "target" setzen (z.B. "20 Min, Zone 2" oder "50 m Sled, schwer"). Für reine Kraft "metrics" weglassen.
+Statische Halte-Übungen (Plank, Wandsitz, Side Plank, Dead Hang) als "type":"bodyweight" mit "metrics":["time_s"] (Sekunden) und z.B. "target":"60 Sek".
 Setze die gewünschte Kardio-Vorgabe als eigene cardio-Übung(en) bzw. Warm-up/Cool-down um.
 Workout-Format pro Tag (optional): "format" ist "standard" (Standard, weglassbar), "for_time", "amrap", "emom" oder "rounds".
 Bei "amrap"/"emom" zusätzlich "timeCap" (Minuten), bei "rounds" zusätzlich "rounds" (Anzahl). Nur für Hybrid-/HYROX-/Konditions-Tage nutzen.
