@@ -3702,11 +3702,24 @@ und stelle die Ausgabe ZUSÄTZLICH als herunterladbare .json-Datei bereit:
       { "name": "Bankdrücken", "sets": 4, "reps": "6-8", "rpe": "8", "rest": 180, "cues": "...", "alt": "..." },
       { "name": "Laufband – lockeres Cardio", "type": "cardio", "metrics": ["time","dist_km"], "sets": 1, "target": "20 Min, Zone 2", "rest": 0, "cues": "...", "alt": "..." },
       { "name": "Bizeps Curl", "group": "A", "sets": 3, "reps": "10-12", "rpe": "9", "rest": 0, "cues": "...", "alt": "..." },
-      { "name": "Trizeps Pushdown", "group": "A", "sets": 3, "reps": "10-12", "rpe": "9", "rest": 90, "cues": "...", "alt": "..." }
+      { "name": "Trizeps Pushdown", "group": "A", "sets": 3, "reps": "10-12", "rpe": "9", "rest": 90, "cues": "...", "alt": "..." },
+      { "name": "Plank", "type": "bodyweight", "metrics": ["time_s"], "sets": 3, "target": "60 Sek", "rest": 60, "cues": "...", "alt": "..." }
     ]},
     { "code": "WOD", "name": "Hybrid-Finisher", "weekday": "Fr", "format": "amrap", "timeCap": 12, "exercises": [
       { "name": "Wall Balls", "type": "functional", "metrics": ["reps","weight"], "sets": 1, "target": "15 Wdh.", "rest": 0, "cues": "...", "alt": "..." },
       { "name": "Rudern", "type": "cardio", "metrics": ["dist_m"], "sets": 1, "target": "250 m", "rest": 0, "cues": "...", "alt": "..." }
+    ]},
+    { "code": "EMOM", "name": "EMOM 12", "weekday": "Mi", "format": "emom", "timeCap": 12, "exercises": [
+      { "name": "Burpees", "type": "functional", "metrics": ["reps"], "sets": 1, "target": "10 Wdh.", "rest": 0, "cues": "...", "alt": "..." },
+      { "name": "KB Swings", "type": "functional", "metrics": ["reps","weight"], "sets": 1, "target": "15 Wdh., 24 kg", "rest": 0, "cues": "...", "alt": "..." }
+    ]},
+    { "code": "FT", "name": "For Time", "weekday": "Do", "format": "for_time", "exercises": [
+      { "name": "Rudern", "type": "cardio", "metrics": ["dist_m"], "sets": 1, "target": "1000 m", "rest": 0, "cues": "...", "alt": "..." },
+      { "name": "Wall Balls", "type": "functional", "metrics": ["reps","weight"], "sets": 1, "target": "50 Wdh., 9 kg", "rest": 0, "cues": "...", "alt": "..." }
+    ]},
+    { "code": "RND", "name": "5 Runden", "weekday": "Sa", "format": "rounds", "rounds": 5, "exercises": [
+      { "name": "Lauf", "type": "cardio", "metrics": ["dist_m"], "sets": 1, "target": "200 m", "rest": 0, "cues": "...", "alt": "..." },
+      { "name": "Wall Balls", "type": "functional", "metrics": ["reps","weight"], "sets": 1, "target": "15 Wdh., 9 kg", "rest": 0, "cues": "...", "alt": "..." }
     ]}
   ],
   "mealPlan": [
@@ -3727,7 +3740,7 @@ und ein kurzes "target" setzen (z.B. "20 Min, Zone 2" oder "50 m Sled, schwer").
 Statische Halte-Übungen (Plank, Wandsitz, Side Plank, Dead Hang) als "type":"bodyweight" mit "metrics":["time_s"] (Sekunden) und z.B. "target":"60 Sek".
 Setze die gewünschte Kardio-Vorgabe als eigene cardio-Übung(en) bzw. Warm-up/Cool-down um.
 Workout-Format pro Tag (optional): "format" ist "standard" (Standard, weglassbar), "for_time", "amrap", "emom" oder "rounds".
-Bei "amrap"/"emom" zusätzlich "timeCap" (Minuten), bei "rounds" zusätzlich "rounds" (Anzahl). Nur für Hybrid-/HYROX-/Konditions-Tage nutzen.
+Bei "amrap"/"emom" zusätzlich "timeCap" (Minuten), bei "rounds" zusätzlich "rounds" (Anzahl). Nur für Hybrid-/HYROX-/Konditions-Tage nutzen. WOD-Übungen: "rest" 0 (die Zeit steuert der Timer), mit kurzem "target".
 Supersätze: zwei (oder mehr) aufeinanderfolgende Übungen mit gleichem "group"-Buchstaben (z.B. "A") kennzeichnen;
 bei allen außer der letzten der Gruppe "rest": 0, bei der letzten die echte Pausenzeit.
 Pro Trainingstag 4-7 Übungen. Pro Ernährungstag so viele Mahlzeiten wie gewünscht (sonst 4-6), kcal-Summe nahe am Ziel.
