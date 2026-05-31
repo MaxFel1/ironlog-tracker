@@ -743,6 +743,37 @@ input[type="range"]::-moz-range-thumb {
 }
 .onb-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px; }
 .onb-sub { font-size: 12px; color: var(--text-dim); line-height: 1.4; margin-top: 2px; }
+
+.wod-focus {
+  position: fixed; inset: 0; z-index: 150; background: var(--bg);
+  display: none; flex-direction: column; padding: 18px 20px calc(env(safe-area-inset-bottom) + 24px);
+}
+.wod-focus.active { display: flex; }
+.wf-top { display: flex; align-items: center; justify-content: space-between; }
+.wf-label { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 16px; color: var(--accent); }
+.wf-top-btns { display: flex; gap: 8px; }
+.wf-top-btns button {
+  width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--border);
+  background: var(--bg-card); color: var(--text); font-size: 18px; cursor: pointer;
+}
+.wf-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 6px; }
+.wf-bar-wrap { width: 100%; max-width: 460px; height: 16px; background: var(--bg-card); border-radius: 10px; overflow: hidden; margin-bottom: 6px; }
+.wf-bar { height: 100%; width: 100%; background: var(--accent); border-radius: 10px; transition: width 0.2s linear, background 0.3s; }
+.wf-primary { font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 84px; line-height: 1; color: var(--accent); letter-spacing: 1px; }
+.wf-active { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 34px; line-height: 1.1; margin-top: 8px; }
+.wf-target { font-size: 16px; color: var(--text-dim); }
+.wf-next { font-size: 15px; color: var(--text-dim); margin-top: 14px; }
+.wf-sub { font-size: 14px; color: var(--text-faint); margin-top: 6px; }
+.wf-list { width: 100%; max-width: 460px; margin: 8px 0; }
+.wf-li { display: flex; justify-content: space-between; gap: 10px; padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 6px; font-size: 15px; text-align: left; }
+.wf-li-t { color: var(--text-dim); font-size: 13px; white-space: nowrap; }
+.wf-counter { font-size: 18px; margin: 10px 0; }
+.wf-counter b { font-size: 28px; color: var(--accent); }
+.wf-bigbtn {
+  width: 100%; max-width: 460px; padding: 20px; border-radius: 16px; border: none;
+  background: var(--accent); color: #06122b; font-family: 'Sora', sans-serif;
+  font-weight: 800; font-size: 20px; cursor: pointer; margin-top: 8px;
+}
 .modal-bg.active { display: flex; }
 .modal {
   background: var(--bg-elevated);
@@ -1499,6 +1530,9 @@ input[type="range"]::-moz-range-thumb {
     <div style="height:12px"></div>
     <button class="btn btn-small" onclick="openAiPlanModal()" style="width:100%;">🧠 Plan mit KI erstellen</button>
     <div style="height:8px"></div>
+    <button class="btn btn-small btn-secondary" id="refineBtn" onclick="openRefineModal()" style="width:100%;">🔄 Plan verfeinern</button>
+    <div id="refineHint" style="font-size:11px; color:var(--text-faint); margin:6px 2px 0; line-height:1.5;"></div>
+    <div style="height:8px"></div>
     <button class="btn btn-secondary btn-small" onclick="document.getElementById('planImportFile').click()" style="width:100%;">⬆ Plan importieren (JSON)</button>
     <input type="file" id="planImportFile" accept=".json" style="display:none" onchange="importPlan(event)">
     <div style="height:8px"></div>
@@ -1659,7 +1693,28 @@ input[type="range"]::-moz-range-thumb {
   </div>
 </div>
 
-<!-- FEEDBACK MODAL -->
+<!-- VERFEINERN MODAL -->
+<div class="modal-bg" id="refineModal">
+  <div class="modal">
+    <div class="modal-title">🔄 Plan verfeinern</div>
+    <p style="font-size:12px; color:var(--text-dim); line-height:1.5; margin:0 0 12px;">
+      Die KI hat keinen Zugriff auf alte Chats – der Prompt enthält alles: Plan, ursprüngliche Vorgaben und deine gesammelten Daten.
+    </p>
+    <div id="refineSummary" style="font-size:12px; color:var(--text-dim); line-height:1.6; background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:12px; white-space:pre-wrap;"></div>
+    <div class="input-group">
+      <label>Notiz (optional, Kontext für die KI)</label>
+      <textarea id="refineNote" rows="2" placeholder="z.B. hatte wenig Zeit, Schulter zwickte, mehr Fokus auf Beine"></textarea>
+    </div>
+    <button class="btn" onclick="copyRefinePrompt()" style="width:100%;">📋 Verfeinern-Prompt kopieren</button>
+    <div style="height:8px"></div>
+    <button class="btn btn-secondary btn-small" onclick="document.getElementById('planImportFile').click()" style="width:100%;">⬇ Verfeinerten Plan importieren (JSON)</button>
+    <div style="font-size:11px; color:var(--text-faint); margin:6px 2px 0; line-height:1.5;">
+      Der verfeinerte Plan wird als neuer Plan importiert und aktiviert – dein alter bleibt erhalten.
+    </div>
+    <div style="height:14px"></div>
+    <button class="btn btn-secondary" onclick="backToPlans()">← Zurück zu Pläne</button>
+  </div>
+</div>
 <div class="modal-bg" id="feedbackModal">
   <div class="modal">
     <div class="modal-title">💬 Feedback</div>
@@ -1735,8 +1790,18 @@ input[type="range"]::-moz-range-thumb {
   </div>
 </div>
 
-<div class="toast" id="toast">—</div>
+<div class="wod-focus" id="wodFocus">
+  <div class="wf-top">
+    <div class="wf-label" id="wodFocusLabel">WOD</div>
+    <div class="wf-top-btns">
+      <button id="wfPauseBtn" onclick="toggleWodFocusPause()">⏸</button>
+      <button onclick="exitWodFocus()">✕</button>
+    </div>
+  </div>
+  <div class="wf-body" id="wodFocusBody"></div>
+</div>
 
+<div class="toast" id="toast">—</div>
 <script>
 /* =================================================================
    TRAINING PLAN — Upper/Lower 4-Day Hypertrophy
@@ -2726,6 +2791,21 @@ function playBeep() {
     });
   } catch(e) {}
 }
+function playTone(freq, beeps, dur) {
+  if (!state.settings.soundEnabled) return;
+  const vol = state.settings.volume;
+  if (vol <= 0) return;
+  beeps = beeps || 1; dur = dur || 0.13;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const gain = ctx.createGain(); gain.gain.value = vol; gain.connect(ctx.destination);
+    for (let i = 0; i < beeps; i++) {
+      const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = freq; o.connect(gain);
+      const t = ctx.currentTime + i * (dur + 0.06);
+      o.start(t); o.stop(t + dur);
+    }
+  } catch(e) {}
+}
 
 function addTime(s) {
   timerEnd += s * 1000;
@@ -2765,22 +2845,26 @@ function wodElapsedMs() {
 }
 function renderWodClock() {
   const el = document.getElementById('wodClock');
-  if (!el) return;
   const elapsed = wodElapsedMs();
   if (wodTimer.mode === 'down') {
     const rem = Math.max(0, wodTimer.capMs - elapsed);
-    el.textContent = fmtClock(rem);
-    if (wodTimer.running && wodTimer.emom) {
+    if (el) el.textContent = fmtClock(rem);
+    if (wodTimer.running && wodTimer.emom && !wodFocus.active) {
       const minDone = Math.floor(elapsed/60000);
       if (minDone > wodTimer.lastBeepMin && elapsed < wodTimer.capMs) {
         wodTimer.lastBeepMin = minDone; playBeep(); if (navigator.vibrate) navigator.vibrate(120);
       }
     }
-    if (rem <= 0 && wodTimer.running) { pauseWodTimer(); playBeep(); if (navigator.vibrate) navigator.vibrate([200,100,200]); }
+    if (wodFocus.active && wodTimer.running) tickWodFocus(elapsed);
+    if (rem <= 0 && wodTimer.running) {
+      pauseWodTimer(); playBeep(); if (navigator.vibrate) navigator.vibrate([200,100,200]);
+      if (wodFocus.active) finishFocus();
+    }
   } else {
-    el.textContent = fmtClock(elapsed);
+    if (el) el.textContent = fmtClock(elapsed);
     const tf = document.getElementById('wodTime');
     if (tf && document.activeElement !== tf) tf.value = fmtClock(elapsed);
+    if (wodFocus.active && wodTimer.running) tickWodFocus(elapsed);
   }
 }
 function startWodTimer() {
@@ -2801,6 +2885,145 @@ function resetWodTimer() {
   wodTimer.baseMs = 0; wodTimer.startTs = 0; wodTimer.lastBeepMin = 0;
   if (wodTimer.interval) { clearInterval(wodTimer.interval); wodTimer.interval = null; }
   renderWodClock();
+}
+
+/* ----- Adaptiver WOD-Fokusmodus (EMOM / AMRAP / For Time / Runden) ----- */
+let wodFocus = { active:false, day:null, rounds:0, roundIdx:0, lastMinute:-1, lastCountdownSec:0 };
+let wodWakeLock = null;
+async function requestWakeLock() { try { if ('wakeLock' in navigator) wodWakeLock = await navigator.wakeLock.request('screen'); } catch(e) {} }
+function releaseWakeLock() { try { if (wodWakeLock) { wodWakeLock.release(); wodWakeLock = null; } } catch(e) {} }
+
+function enterWodFocus() {
+  const idx = state.activeWorkout ? state.activeWorkout.dayIdx : state.currentDayIdx;
+  const day = getDay(idx);
+  const info = day && wodFormatInfo(day);
+  if (!info) return;
+  wodFocus = { active:true, day, rounds:0, roundIdx:0, lastMinute:0, lastCountdownSec:0 };
+  wodTimer.mode = info.mode; wodTimer.capMs = info.capMs; wodTimer.emom = info.emom;
+  resetWodTimer();
+  document.getElementById('wodFocus').classList.add('active');
+  requestWakeLock();
+  startWodTimer();
+  playTone(880, 1, 0.15);            // Start-Signal
+  renderWodFocus();
+}
+function exitWodFocus() {
+  writeWodResultFields();
+  pauseWodTimer();
+  wodFocus.active = false;
+  document.getElementById('wodFocus').classList.remove('active');
+  releaseWakeLock();
+  renderTraining();
+}
+function finishFocus() {
+  writeWodResultFields();
+  pauseWodTimer();
+  playTone(523, 3, 0.18); if (navigator.vibrate) navigator.vibrate([200,100,200,100,300]);
+  wodFocus.active = false;
+  document.getElementById('wodFocus').classList.remove('active');
+  releaseWakeLock();
+  renderTraining();
+  showToast("✓ WOD geschafft – Ergebnis übernommen");
+}
+function toggleWodFocusPause() {
+  const btn = document.getElementById('wfPauseBtn');
+  if (wodTimer.running) { pauseWodTimer(); if (btn) btn.textContent = '▶'; }
+  else { startWodTimer(); if (btn) btn.textContent = '⏸'; }
+}
+function addAmrapRound() { wodFocus.rounds++; playTone(880,1,0.1); renderWodFocus(); }
+function advanceRound() {
+  const info = wodFormatInfo(wodFocus.day); if (!info) return;
+  const n = info.rounds || 0;
+  wodFocus.roundIdx++;
+  if (n && wodFocus.roundIdx >= n) { finishFocus(); return; }
+  playTone(880,1,0.1); renderWodFocus();
+}
+function writeWodResultFields() {
+  const info = wodFormatInfo(wodFocus.day); if (!info) return;
+  if (info.f === 'amrap') {
+    const r = document.getElementById('wodRounds'); if (r) r.value = wodFocus.rounds || 0;
+  } else if (info.f === 'for_time' || info.f === 'rounds') {
+    const t = document.getElementById('wodTime'); if (t) t.value = fmtClock(wodElapsedMs());
+  }
+}
+function wodExListHtml(exs) {
+  return exs.map(e => `<div class="wf-li"><span>${e.name}</span><span class="wf-li-t">${e.target || e.reps || ''}</span></div>`).join('');
+}
+function renderWodFocus() {
+  if (!wodFocus.active) return;
+  const day = wodFocus.day;
+  const info = wodFormatInfo(day);
+  const exs = day.exercises || [];
+  const label = document.getElementById('wodFocusLabel');
+  const body = document.getElementById('wodFocusBody');
+  if (!info || !body) return;
+  if (label) label.textContent = info.label;
+  const elapsed = wodElapsedMs();
+  if (info.emom) {
+    const totalMin = Math.max(1, Math.round(info.capMs/60000));
+    const minute = Math.min(totalMin-1, Math.floor(elapsed/60000));
+    const active = exs.length ? exs[minute % exs.length] : null;
+    const next = exs.length ? exs[(minute+1) % exs.length] : null;
+    body.innerHTML = `
+      <div class="wf-bar-wrap"><div id="wodFocusBar" class="wf-bar"></div></div>
+      <div id="wodFocusPrimary" class="wf-primary">60s</div>
+      <div class="wf-active">${active ? active.name : '—'}</div>
+      <div class="wf-target">${active ? (active.target || active.reps || '') : ''}</div>
+      ${next ? `<div class="wf-next">Als nächstes: <b>${next.name}</b></div>` : ''}
+      <div class="wf-sub">Minute ${minute+1} / ${totalMin}</div>`;
+  } else if (info.f === 'amrap') {
+    body.innerHTML = `
+      <div class="wf-bar-wrap"><div id="wodFocusBar" class="wf-bar"></div></div>
+      <div id="wodFocusPrimary" class="wf-primary">${fmtClock(info.capMs)}</div>
+      <div class="wf-sub">verbleibend</div>
+      <div class="wf-list">${wodExListHtml(exs)}</div>
+      <div class="wf-counter">Runden: <b id="wfRounds">${wodFocus.rounds}</b></div>
+      <button class="wf-bigbtn" onclick="addAmrapRound()">+1 Runde</button>`;
+  } else if (info.f === 'rounds') {
+    const n = info.rounds || 0;
+    body.innerHTML = `
+      <div id="wodFocusPrimary" class="wf-primary">${fmtClock(elapsed)}</div>
+      <div class="wf-sub">Runde ${Math.min(n, wodFocus.roundIdx+1)} / ${n || '?'}</div>
+      <div class="wf-list">${wodExListHtml(exs)}</div>
+      <button class="wf-bigbtn" onclick="advanceRound()">✓ Runde fertig</button>`;
+  } else { // for_time
+    body.innerHTML = `
+      <div id="wodFocusPrimary" class="wf-primary">${fmtClock(elapsed)}</div>
+      <div class="wf-sub">Zeit läuft</div>
+      <div class="wf-list">${wodExListHtml(exs)}</div>
+      <button class="wf-bigbtn" onclick="finishFocus()">✓ Fertig</button>`;
+  }
+}
+function tickWodFocus(elapsed) {
+  const info = wodFormatInfo(wodFocus.day); if (!info) return;
+  const prim = document.getElementById('wodFocusPrimary');
+  const bar = document.getElementById('wodFocusBar');
+  if (info.emom) {
+    const totalMin = Math.max(1, Math.round(info.capMs/60000));
+    const minute = Math.floor(elapsed/60000);
+    const remInMin = 60 - (elapsed/1000 - minute*60);
+    if (prim) prim.textContent = Math.ceil(remInMin) + 's';
+    if (bar) { bar.style.width = Math.max(0, Math.min(100, remInMin/60*100)) + '%'; bar.style.background = remInMin <= 10 ? 'var(--danger)' : 'var(--accent)'; }
+    // Minutenwechsel -> neue Übung + Wechselton
+    if (minute > wodFocus.lastMinute && elapsed < info.capMs) {
+      wodFocus.lastMinute = minute;
+      playTone(1320, 3, 0.12); if (navigator.vibrate) navigator.vibrate([120,60,120]);
+      renderWodFocus();
+    }
+    // 3-2-1 vor dem Wechsel
+    const cs = Math.ceil(remInMin);
+    if (cs <= 3 && cs >= 1) { if (cs !== wodFocus.lastCountdownSec) { wodFocus.lastCountdownSec = cs; playTone(660,1,0.08); } }
+    else wodFocus.lastCountdownSec = 0;
+  } else if (info.mode === 'down') { // amrap
+    const rem = Math.max(0, info.capMs - elapsed);
+    if (prim) prim.textContent = fmtClock(rem);
+    if (bar) { bar.style.width = (rem/info.capMs*100) + '%'; bar.style.background = rem <= 10000 ? 'var(--danger)' : 'var(--accent)'; }
+    const cs = Math.ceil(rem/1000);
+    if (cs <= 3 && cs >= 1) { if (cs !== wodFocus.lastCountdownSec) { wodFocus.lastCountdownSec = cs; playTone(660,1,0.08); } }
+    else wodFocus.lastCountdownSec = 0;
+  } else { // for_time / rounds (hochlaufend)
+    if (prim) prim.textContent = fmtClock(elapsed);
+  }
 }
 function renderWodCard(day) {
   const card = document.getElementById('wodCard');
@@ -2825,7 +3048,7 @@ function renderWodCard(day) {
       <div style="font-size:12px; color:var(--text-dim); margin-top:2px;">${info.hint}</div>
       <div id="wodClock" class="mono" style="font-size:46px; font-weight:700; color:var(--accent); letter-spacing:1px; margin:10px 0;">00:00</div>
       <div style="display:flex; gap:8px; justify-content:center;">
-        <button class="btn btn-small" style="width:auto;" onclick="startWodTimer()">▶ Start</button>
+        <button class="btn btn-small" style="width:auto;" onclick="enterWodFocus()">▶ Start (Fokus)</button>
         <button class="btn btn-small btn-secondary" style="width:auto;" onclick="pauseWodTimer()">⏸ Pause</button>
         <button class="btn btn-small btn-ghost" style="width:auto;" onclick="resetWodTimer()">↺ Reset</button>
       </div>
@@ -3283,6 +3506,7 @@ function deleteGroup(id) {
    ================================================================= */
 function openPlansModal() {
   renderPlansList();
+  updateRefineButton();
   document.getElementById('plansModal').classList.add('active');
 }
 function closePlansModal() {
@@ -3354,6 +3578,8 @@ function buildAiPrompt() {
   if (likes) nutPrefs += `\n- Vorlieben: ${likes}`;
   if (avoid) nutPrefs += `\n- Vermeiden / Unverträglichkeiten (strikt): ${avoid}`;
   const cyclePlan = aiVal('aiCyclePlan', 'Aus');
+  const sani = v => String(v || '').replace(/"/g, "'");
+  const metaJson = `"meta": { "goal": "${sani(goal)}", "level": "${sani(level)}", "daysPerWeek": "${sani(days)}", "equipment": "${sani(equip)}", "split": "${sani(split)}", "duration": "${sani(dur)}", "cardio": "${sani(cardio)}", "formats": "${sani(formats)}", "special": "${sani(special)}", "diet": "${sani(diet)}" }`;
   const cycleBlock = cyclePlan.startsWith('Ein')
     ? `\nZYKLUSBASIERT: Gib statt eines einzelnen Plans ein "plans"-Array mit GENAU 2 Trainingsplänen aus:
 - Plan mit "cyclePhase": "follicular" (Follikelphase / mehr Energie): höhere Intensität & Lasten, schwere Grundübungen, ggf. PR-Versuche.
@@ -3402,6 +3628,7 @@ und stelle die Ausgabe ZUSÄTZLICH als herunterladbare .json-Datei bereit:
   "type": "ironlog-plan",
   "schemaVersion": 2,
   "name": "...",
+  ${metaJson},
   "days": [
     { "code": "GK1", "name": "Ganzkörper A", "weekday": "Mo", "exercises": [
       { "name": "Bankdrücken", "sets": 4, "reps": "6-8", "rpe": "8", "rest": 180, "cues": "...", "alt": "..." },
@@ -3437,6 +3664,7 @@ Supersätze: zwei (oder mehr) aufeinanderfolgende Übungen mit gleichem "group"-
 bei allen außer der letzten der Gruppe "rest": 0, bei der letzten die echte Pausenzeit.
 Pro Trainingstag 4-7 Übungen. Pro Ernährungstag so viele Mahlzeiten wie gewünscht (sonst 4-6), kcal-Summe nahe am Ziel.
 Die Anzahl der Tageseinträge in "mealPlan" richtet sich nach dem gewünschten Umfang (z.B. 7 Einträge bei „ganze Woche").
+Füge das gezeigte "meta"-Objekt mit den Vorgaben (Ziel, Level, Tage, Equipment, Split, Diät) ein – es wird für die spätere automatische Plan-Verfeinerung gespeichert. Beim Zyklus-Wrapper das "meta"-Objekt auf oberster Ebene (neben "plans").
 Halte Kostform und Vermeidungen strikt ein.${cycleBlock}
 Gib nur das JSON aus, sonst nichts.`;
 }
@@ -3493,7 +3721,57 @@ function closeAiPlanModal() {
 }
 function backToPlans() {
   closeAiPlanModal();
+  closeRefineModal();
   openPlansModal();
+}
+function updateRefineButton() {
+  const btn = document.getElementById('refineBtn');
+  const hint = document.getElementById('refineHint');
+  if (!btn || !hint) return;
+  const g = refineGate();
+  if (g.unlocked) {
+    btn.disabled = false; btn.style.opacity = '1';
+    hint.textContent = 'Bereit – verfeinert deinen Plan anhand deiner Daten. Ab ~4 Wochen Daten wird zusätzlich die kcal-Menge angepasst und der Plan genauer.';
+  } else {
+    btn.disabled = true; btn.style.opacity = '0.5';
+    const needS = Math.max(0, 3 - g.sessions);
+    const needD = Math.max(0, 14 - g.daysSpan);
+    hint.textContent = `Wird ab 3 Einheiten / 14 Tagen freigeschaltet – noch ${needS} Einheit(en) und ${needD} Tag(e). Dann verfeinert die KI deinen Plan datenbasiert.`;
+  }
+}
+function openRefineModal() {
+  if (!refineGate().unlocked) return;
+  closePlansModal();
+  renderRefineSummary();
+  document.getElementById('refineModal').classList.add('active');
+}
+function closeRefineModal() {
+  const el = document.getElementById('refineModal');
+  if (el) el.classList.remove('active');
+}
+function renderRefineSummary() {
+  const el = document.getElementById('refineSummary');
+  if (!el) return;
+  const kc = suggestKcalAdjustment();
+  const tr = weightTrend(4);
+  const weightLine = tr
+    ? `Gewicht: ${tr.current} kg · Trend ${tr.perWeek>=0?'+':''}${tr.perWeek.toFixed(2)} kg/Woche`
+    : 'Gewicht: noch wenig Daten';
+  const summary = buildRefineSummary();
+  el.textContent =
+    `${adherenceLine()}\n${weightLine}\nkcal-Ziel: ${kc.kcal} (${kc.protein}P / ${kc.fat}F / ${kc.carbs}KH)\n→ ${kc.reason}\n\nTraining (erst → zuletzt):\n${summary || '—'}`;
+}
+function copyRefinePrompt() {
+  const txt = buildRefinePrompt();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(() => showToast('✓ Verfeinern-Prompt kopiert'), () => fallbackCopy(txt));
+  } else { fallbackCopy(txt); }
+}
+function fallbackCopy(txt) {
+  const ta = document.createElement('textarea');
+  ta.value = txt; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); showToast('✓ Prompt kopiert'); } catch(e) { showToast('Kopieren nicht möglich'); }
+  ta.remove();
 }
 async function copyAiPrompt() {
   const text = document.getElementById('aiPromptText').value;
@@ -3605,7 +3883,19 @@ function validateAndNormalizePlan(obj) {
   });
   const plan = { id: planId, name: String(obj.name || "Importierter Plan").slice(0,60), days };
   if (['follicular','luteal'].includes(obj.cyclePhase)) plan.cyclePhase = obj.cyclePhase;
+  const meta = sanitizeMeta(obj.meta);
+  if (meta) plan.meta = meta;
   return plan;
+}
+function sanitizeMeta(m) {
+  if (!m || typeof m !== 'object') return null;
+  const keys = ['goal','level','daysPerWeek','equipment','split','duration','cardio','formats','special','diet'];
+  const out = {};
+  let any = false;
+  keys.forEach(k => {
+    if (m[k] != null && String(m[k]).trim() !== '') { out[k] = String(m[k]).slice(0,120); any = true; }
+  });
+  return any ? out : null;
 }
 function importPlan(event) {
   const file = event.target.files[0];
@@ -3622,6 +3912,7 @@ function importPlan(event) {
         data.plans.forEach(pe => {
           if (!pe || !Array.isArray(pe.days) || !pe.days.length) return;
           const plan = validateAndNormalizePlan(pe);
+          if (!plan.meta && data.meta) { const mm = sanitizeMeta(data.meta); if (mm) plan.meta = mm; }
           const mpp = sanitizeMealPlan(pe.mealPlan);
           if (mpp) plan.mealPlan = mpp;
           state.plans.push(plan);
@@ -3659,6 +3950,7 @@ function importPlan(event) {
       renderPlansList();
       renderToday();
       updateOnboarding();
+      closeRefineModal();
       const nv = document.getElementById('view-nutrition');
       if (nv && nv.classList.contains('active')) renderNutrition();
       showToast("✓ " + did.join(" + ") + " importiert");
@@ -3685,9 +3977,8 @@ function sanitizeMealPlan(mp) {
   }).filter(d => d.meals.length > 0);
   return out.length ? out : null;
 }
-function exportActivePlan() {
+function activePlanExportObj() {
   const pl = getActivePlan();
-  // Export im sauberen Import-Format (ohne interne IDs)
   const out = {
     type: "ironlog-plan",
     schemaVersion: 2,
@@ -3712,6 +4003,12 @@ function exportActivePlan() {
   };
   if (Array.isArray(pl.mealPlan) && pl.mealPlan.length) out.mealPlan = pl.mealPlan;
   if (pl.cyclePhase) out.cyclePhase = pl.cyclePhase;
+  if (pl.meta) out.meta = pl.meta;
+  return out;
+}
+function exportActivePlan() {
+  const pl = getActivePlan();
+  const out = activePlanExportObj();
   const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -3721,10 +4018,147 @@ function exportActivePlan() {
 }
 
 /* =================================================================
-   NUTRITION VIEW
+   PLAN VERFEINERN (Feedbackschleife)
    ================================================================= */
-let selectedDate = todayStr();             // gewählter Ernährungs-Tag (Laufzeit)
-function activeDate() { return selectedDate; }
+function refineGate() {
+  const hist = state.workoutHistory || [];
+  const sessions = hist.length;
+  let daysSpan = 0;
+  if (sessions > 0) {
+    const ts = hist.map(w => new Date(w.date + 'T00:00:00').getTime()).filter(t => !isNaN(t));
+    if (ts.length) daysSpan = Math.floor((new Date(todayStr() + 'T00:00:00').getTime() - Math.min(...ts)) / 86400000);
+  }
+  return { sessions, daysSpan, unlocked: sessions >= 3 && daysSpan >= 14 };
+}
+function weightTrend(weeks) {
+  const wts = (state.weights || []).filter(w => w && w.kg).slice().sort((a,b) => a.date < b.date ? -1 : 1);
+  if (wts.length < 2) return null;
+  const cut = new Date(todayStr() + 'T00:00:00'); cut.setDate(cut.getDate() - weeks * 7);
+  let use = wts.filter(w => new Date(w.date + 'T00:00:00') >= cut);
+  if (use.length < 3) use = wts.slice(-Math.max(3, use.length)); // Fallback: letzte Punkte
+  const t0 = new Date(use[0].date + 'T00:00:00').getTime();
+  const xs = use.map(w => (new Date(w.date + 'T00:00:00').getTime() - t0) / 86400000);
+  const ys = use.map(w => w.kg);
+  const n = xs.length;
+  const sx = xs.reduce((a,b)=>a+b,0), sy = ys.reduce((a,b)=>a+b,0);
+  const sxx = xs.reduce((a,b)=>a+b*b,0), sxy = xs.reduce((a,b,i)=>a+b*ys[i],0);
+  const den = n*sxx - sx*sx;
+  const perWeek = den === 0 ? 0 : ((n*sxy - sx*sy) / den) * 7;
+  const spanDays = xs[n-1] - xs[0];
+  return { perWeek, current: ys[n-1], first: ys[0], n, spanDays, enough: spanDays >= 21 && n >= 3 };
+}
+function suggestKcalAdjustment() {
+  const T = state.targets, p = state.profile;
+  const tr = weightTrend(4);
+  if (!tr || !tr.enough) {
+    return { kcal: T.kcal, protein: T.protein, fat: T.fat, carbs: T.carbs, enough: false,
+      reason: 'Noch keine ~4 Wochen Gewichtsdaten – kcal bleiben vorerst beim aktuellen Ziel.' };
+  }
+  const bw = tr.current || p.weight;
+  const ratePct = bw ? (tr.perWeek / bw) * 100 : 0;
+  const dir = (p.goalDelta||0) > 50 ? 'gain' : (p.goalDelta||0) < -50 ? 'lose' : 'maintain';
+  let kcal = T.kcal, reason;
+  const r = tr.perWeek.toFixed(2);
+  if (dir === 'gain') {
+    if (ratePct < 0.15) { kcal += 150; reason = `Aufbau zu langsam (${r} kg/Wo) → +150 kcal.`; }
+    else if (ratePct > 0.6) { kcal -= 125; reason = `Zunahme zu schnell (${r} kg/Wo, Fettrisiko) → −125 kcal.`; }
+    else reason = `Aufbau im Zielkorridor (${r} kg/Wo) → kcal halten.`;
+  } else if (dir === 'lose') {
+    if (ratePct > -0.3) { kcal -= 150; reason = `Abnahme zu langsam (${r} kg/Wo) → −150 kcal.`; }
+    else if (ratePct < -1.1) { kcal += 125; reason = `Abnahme zu schnell (${r} kg/Wo, Muskelverlust-Risiko) → +125 kcal.`; }
+    else reason = `Abnahme im Zielkorridor (${r} kg/Wo) → kcal halten.`;
+  } else {
+    if (Math.abs(ratePct) > 0.3) { kcal += ratePct > 0 ? -100 : 100; reason = `Gewicht driftet (${r} kg/Wo) → ${ratePct>0?'−':'+'}100 kcal zum Halten.`; }
+    else reason = `Gewicht stabil (${r} kg/Wo) → kcal halten.`;
+  }
+  kcal = Math.max(1200, Math.round(kcal/10)*10);
+  const protein = Math.round((p.weight||bw) * 2.0);
+  const fat = Math.round((p.weight||bw) * 0.9);
+  const carbs = Math.max(0, Math.round((kcal - protein*4 - fat*9) / 4));
+  return { kcal, protein, fat, carbs, enough: true, reason };
+}
+function fmtBestSet(b) {
+  if (!b) return '–';
+  if (b.w != null) return `${b.w} kg × ${b.r ?? '?'}`;
+  if (b.time_s != null) return `${b.time_s} s`;
+  if (b.r != null) return `${b.r} Wdh.`;
+  if (b.dist_km != null) return `${b.dist_km} km`;
+  if (b.dist_m != null) return `${b.dist_m} m`;
+  if (b.watt != null) return `${b.watt} W`;
+  return '–';
+}
+function buildRefineSummary() {
+  const hist = (state.workoutHistory || []).slice().sort((a,b) => a.date < b.date ? -1 : 1);
+  const byEx = {};
+  hist.forEach(w => (w.exercises || []).forEach(ex => {
+    const key = ex.name || ex.id;
+    let best = null, bestScore = -1;
+    (ex.sets || []).forEach(s => {
+      let score = 0;
+      if (s.w != null) score = s.w * (1 + (s.r||1)/30);
+      else if (s.time_s != null) score = s.time_s;
+      else if (s.r != null) score = s.r;
+      else if (s.dist_km != null) score = s.dist_km * 1000;
+      else if (s.dist_m != null) score = s.dist_m;
+      else if (s.watt != null) score = s.watt;
+      if (score > bestScore) { bestScore = score; best = s; }
+    });
+    if (best) { (byEx[key] = byEx[key] || []).push({ best, score: bestScore }); }
+  }));
+  return Object.keys(byEx).map(name => {
+    const arr = byEx[name];
+    const f = arr[0], l = arr[arr.length-1];
+    let trend = '→';
+    if (arr.length >= 2) trend = l.score > f.score*1.02 ? '↑' : (l.score < f.score*0.98 ? '↓' : '→');
+    return `- ${name}: ${arr.length}× · ${fmtBestSet(f.best)} → ${fmtBestSet(l.best)} ${trend}`;
+  }).join('\n');
+}
+function adherenceLine() {
+  const g = refineGate();
+  const weeks = Math.max(1, g.daysSpan/7);
+  const planned = getPlanDays().length;
+  return `Einheiten: ${g.sessions} in ${g.daysSpan} Tagen (~${(g.sessions/weeks).toFixed(1)}/Woche; Plan: ${planned} Tage/Woche).`;
+}
+function buildRefinePrompt() {
+  const pl = getActivePlan();
+  const p = state.profile;
+  const kc = suggestKcalAdjustment();
+  const tr = weightTrend(4);
+  const metaStr = pl.meta
+    ? Object.entries(pl.meta).map(([k,v]) => `${k}: ${v}`).join(', ')
+    : '(keine gespeicherten Vorgaben – Ziel siehe Profil, ggf. Notiz unten beachten)';
+  const note = (document.getElementById('refineNote') ? document.getElementById('refineNote').value : '').trim();
+  const planJson = JSON.stringify(activePlanExportObj(), null, 2);
+  const dir = (p.goalDelta||0) > 50 ? 'Aufbau' : (p.goalDelta||0) < -50 ? 'Abnahme' : 'Halten';
+  const weightLine = tr
+    ? `Gewicht aktuell ${tr.current} kg, Trend ${tr.perWeek>=0?'+':''}${tr.perWeek.toFixed(2)} kg/Woche (über ~4 Wochen).`
+    : 'Noch wenig Gewichtsdaten.';
+  const summary = buildRefineSummary();
+  return `Du bist mein Trainings- und Ernährungscoach. Verfeinere meinen bestehenden Plan datenbasiert. Du hast KEINEN Zugriff auf frühere Chats – alle nötigen Infos stehen hier im Prompt.
+
+URSPRÜNGLICHE VORGABEN: ${metaStr}
+PROFIL: ${p.sex==='f'?'weiblich':'männlich'}, ${p.age} J, ${p.height} cm, ${p.weight} kg · Ziel: ${dir}.
+${weightLine}
+${adherenceLine()}
+
+TRAININGSVERLAUF (bester Satz je Übung, erste → letzte Einheit):
+${summary || '(noch keine auswertbaren Sätze)'}
+
+ERNÄHRUNG – datenbasiertes kcal-Ziel: ${kc.kcal} kcal — ${kc.protein} g Protein / ${kc.fat} g Fett / ${kc.carbs} g KH.
+Begründung: ${kc.reason}
+${note ? 'MEINE NOTIZ: ' + note + '\n' : ''}
+AUFGABE:
+- Passe Lasten / Wiederholungen / Volumen an die Progression an: gute Fortschritte (↑) leicht steigern; Stagnation (→/↓) durch Variation, neuen Reizbereich oder Deload auflösen.
+- Behalte Ziel, Split, Tage-Anzahl und Equipment laut Vorgaben bei, außer die Daten sprechen klar dagegen.
+- Trage konkrete Richtwerte ins "target" jeder Übung ein (z.B. "3×8 @ 72,5 kg", "Plank 3×60 s").
+- Optimiere den "mealPlan" zur kcal-Vorgabe, Protein priorisieren.
+- Sei konservativ; erkläre jede Änderung kurz.
+
+AUSGABE: Gib denselben Plan im IRON.LOG-Importformat als JSON zurück (Struktur wie unten), inklusive "meta" und einem zusätzlichen Feld "changes" (Liste kurzer Klartext-Begründungen). Gib nur das JSON aus, sonst nichts.
+
+AKTUELLER PLAN (IRON.LOG-Importformat):
+${planJson}`;
+}
 function onNutDateChange() {
   const v = document.getElementById('nutDate').value;
   if (v) selectedDate = v;
