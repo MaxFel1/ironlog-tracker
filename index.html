@@ -1862,6 +1862,67 @@ const DEFAULT_PLAN = {
   ]
 };
 
+const HYROX_DEMO_PLAN = {
+  id: "hyrox-demo",
+  name: "HYROX – Beispiel (alle Formate)",
+  meta: { goal: "Funktionell/Hybrid (HYROX)", level: "Fortgeschritten", daysPerWeek: "6", equipment: "Functional/HYROX-Gym", split: "Hybrid", duration: "45–60 Min", cardio: "Integriert", formats: "EMOM/AMRAP/For Time/Runden", special: "Demo-Plan zum Ausprobieren aller Ansichten", diet: "Omnivor" },
+  days: [
+    {
+      code: "KR", name: "Kraft – Ganzkörper", weekday: "Mo",
+      exercises: [
+        { id:"hx1", name:"Back Squat", sets:4, reps:"5", rpe:"8", rest:180, cues:"Tief, Brust auf, Knie nach außen", alt:"Front Squat" },
+        { id:"hx2", name:"Rumänisches Kreuzheben", sets:3, reps:"8", rpe:"8", rest:150, cues:"Hüfte zurück, Stange nah am Körper", alt:"KH RDL" },
+        { id:"hx3a", name:"Klimmzüge", group:"A", sets:3, reps:"6-10", rpe:"8", rest:0, cues:"Volle Range, Brust zur Stange", alt:"Latzug breit" },
+        { id:"hx3b", name:"Liegestütze", group:"A", sets:3, reps:"10-15", rpe:"8", rest:120, cues:"Körper als gerade Linie", alt:"Bankdrücken" },
+        { id:"hx4", name:"Plank", type:"bodyweight", metrics:["time_s"], target:"60 Sek halten", sets:3, reps:"60s", rpe:"8", rest:60, cues:"Bauch fest, gerade Linie", alt:"Side Plank" }
+      ]
+    },
+    {
+      code: "EMOM", name: "EMOM 12 – Conditioning", weekday: "Di", format:"emom", timeCap:12,
+      exercises: [
+        { id:"hx5", name:"Burpees", type:"functional", metrics:["reps"], sets:1, reps:"10", target:"10 Wdh.", rpe:"8", rest:0, cues:"Sauberes, gleichmäßiges Tempo", alt:"Burpee Broad Jump" },
+        { id:"hx6", name:"Kettlebell Swings", type:"functional", metrics:["reps","weight"], sets:1, reps:"15", target:"15 Wdh., 24 kg", rpe:"8", rest:0, cues:"Explosiv aus der Hüfte", alt:"KH Swing" },
+        { id:"hx7", name:"Wall Balls", type:"functional", metrics:["reps","weight"], sets:1, reps:"12", target:"12 Wdh., 9 kg", rpe:"8", rest:0, cues:"Tief in die Hocke, Ziel über Linie", alt:"Thruster" }
+      ]
+    },
+    {
+      code: "ENG", name: "Engine – Kardio Zone 2", weekday: "Mi",
+      exercises: [
+        { id:"hx8", name:"Lauf locker", type:"cardio", metrics:["time","dist_km","hr"], sets:1, target:"40 Min Zone 2", rpe:"5", rest:0, cues:"Locker, Puls in Zone 2 halten", alt:"Rad / Crosstrainer" },
+        { id:"hx9", name:"Rudergerät", type:"cardio", metrics:["dist_m","watt"], sets:1, target:"2000 m locker", rpe:"5", rest:0, cues:"Beine–Rücken–Arme, kontrolliert", alt:"SkiErg" }
+      ]
+    },
+    {
+      code: "AMRAP", name: "AMRAP 16 – HYROX-Mix", weekday: "Do", format:"amrap", timeCap:16,
+      exercises: [
+        { id:"hx10", name:"SkiErg", type:"cardio", metrics:["dist_m"], sets:1, target:"250 m", rpe:"8", rest:0, cues:"Kräftiger Zug, Hüfte einsetzen", alt:"Row 250 m" },
+        { id:"hx11", name:"Walking Lunges mit Kurzhanteln", type:"functional", metrics:["reps","weight"], sets:1, target:"20 Schritte, 2x15 kg", rpe:"8", rest:0, cues:"Knie kontrolliert, Oberkörper aufrecht", alt:"Sandbag Lunges" },
+        { id:"hx12", name:"Wall Balls", type:"functional", metrics:["reps","weight"], sets:1, target:"15 Wdh., 9 kg", rpe:"8", rest:0, cues:"Tief, Ziel treffen", alt:"Thruster" },
+        { id:"hx13", name:"Burpees", type:"functional", metrics:["reps"], sets:1, target:"10 Wdh.", rpe:"8", rest:0, cues:"Brust zum Boden", alt:"Burpee Broad Jump" },
+        { id:"hx14", name:"Kettlebell Swings", type:"functional", metrics:["reps","weight"], sets:1, target:"20 Wdh., 24 kg", rpe:"8", rest:0, cues:"Explosiv aus der Hüfte", alt:"KH Swing" }
+      ]
+    },
+    {
+      code: "FT", name: "For Time – Chipper", weekday: "Fr", format:"for_time",
+      exercises: [
+        { id:"hx15", name:"Rudergerät", type:"cardio", metrics:["dist_m"], sets:1, target:"1000 m", rpe:"8", rest:0, cues:"Gleichmäßiges Tempo finden", alt:"SkiErg 1000 m" },
+        { id:"hx16", name:"Wall Balls", type:"functional", metrics:["reps","weight"], sets:1, target:"50 Wdh., 9 kg", rpe:"8", rest:0, cues:"In Sätzen aufteilen", alt:"Thruster" },
+        { id:"hx17", name:"Burpees", type:"functional", metrics:["reps"], sets:1, target:"40 Wdh.", rpe:"8", rest:0, cues:"Tempo halten, atmen", alt:"Burpee Broad Jump" },
+        { id:"hx18", name:"Kettlebell Swings", type:"functional", metrics:["reps","weight"], sets:1, target:"30 Wdh., 24 kg", rpe:"8", rest:0, cues:"Explosiv aus der Hüfte", alt:"KH Swing" },
+        { id:"hx19", name:"Lauf Sprint", type:"cardio", metrics:["dist_m","time"], sets:1, target:"200 m, alles geben", rpe:"9", rest:0, cues:"Finisher – Vollgas", alt:"SkiErg 200 m" }
+      ]
+    },
+    {
+      code: "RND", name: "5 Runden auf Zeit", weekday: "Sa", format:"rounds", rounds:5,
+      exercises: [
+        { id:"hx20", name:"Lauf", type:"cardio", metrics:["dist_m"], sets:1, target:"200 m", rpe:"8", rest:0, cues:"Gleichmäßig pro Runde", alt:"Row 250 m" },
+        { id:"hx21", name:"Sandbag Lunges", type:"functional", metrics:["reps","weight"], sets:1, target:"10 Schritte, 20 kg", rpe:"8", rest:0, cues:"Sandsack stabil auf den Schultern", alt:"KH Lunges" },
+        { id:"hx22", name:"Wall Balls", type:"functional", metrics:["reps","weight"], sets:1, target:"15 Wdh., 9 kg", rpe:"8", rest:0, cues:"Tief, Ziel treffen", alt:"Thruster" }
+      ]
+    }
+  ]
+};
+
 /* ---- Plan-Helfer (arbeiten auf state.plans) ---- */
 function getActivePlan() {
   let p = state.plans.find(pl => pl.id === state.activePlanId);
@@ -2207,6 +2268,13 @@ function normalizeState() {
     const hasHistory = Array.isArray(state.workoutHistory) && state.workoutHistory.length > 0;
     const hasWeights = Array.isArray(state.weights) && state.weights.length > 0;
     state.onboarded = !!(hasOwn || hasHistory || hasWeights);
+  }
+  // HYROX-Demo-Plan einmalig hinzufügen (auch für Bestandsnutzer); kommt nach Löschen nicht zurück
+  if (!state.seededHyroxDemo) {
+    if (!(state.plans || []).some(p => p.id === 'hyrox-demo')) {
+      state.plans.push(JSON.parse(JSON.stringify(HYROX_DEMO_PLAN)));
+    }
+    state.seededHyroxDemo = true;
   }
 
   // alte currentDay-Keys (z.B. "upperA") -> Index migrieren
