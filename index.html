@@ -2124,6 +2124,19 @@ function normalizeState() {
   }
   if (!state.activePlanId) state.activePlanId = state.plans[0].id;
   migrateSupersets();
+  // Migration: gespeicherter Plank im Standardplan -> Sekunden-Metrik + Halte-Timer
+  (state.plans || []).forEach(pl => {
+    (pl.days || []).forEach(day => {
+      (day.exercises || []).forEach(ex => {
+        const isPlank = ex.id === 'la6' || (ex.name && ex.name.toLowerCase() === 'plank');
+        if (isPlank && !(Array.isArray(ex.metrics) && ex.metrics.includes('time_s'))) {
+          ex.type = 'bodyweight';
+          ex.metrics = ['time_s'];
+          if (!ex.target) ex.target = '45–60 Sek halten';
+        }
+      });
+    });
+  });
   if (typeof state.onboarded !== 'boolean') {
     const hasOwn = Array.isArray(state.plans) && state.plans.some(p => p.id !== 'default');
     const hasHistory = Array.isArray(state.workoutHistory) && state.workoutHistory.length > 0;
