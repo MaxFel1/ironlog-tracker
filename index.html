@@ -298,6 +298,11 @@ main { padding: 20px; }
   border-radius: 10px; padding: 8px; color: var(--text);
   font-family: 'JetBrains Mono', monospace; text-align: center;
 }
+.food-thumb { width: 42px; height: 42px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: var(--bg); }
+.food-recent-label { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; margin: 4px 2px 6px; }
+.portion-preview { text-align: center; background: var(--accent-soft); border-radius: 12px; padding: 10px; margin-bottom: 14px; }
+.portion-preview .pp-kcal { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 22px; color: var(--accent); }
+.portion-preview .pp-sub { font-size: 11px; color: var(--text-dim); }
 
 .cues {
   font-size: 13px;
@@ -1257,9 +1262,14 @@ input[type="range"]::-moz-range-thumb {
 <div class="modal-bg" id="portionModal">
   <div class="modal">
     <div class="modal-title" id="portionTitle">—</div>
+    <img id="portionImg" class="food-thumb" style="width:100%; height:140px; border-radius:12px; margin-bottom:12px; display:none;" alt="">
     <div class="input-group">
-      <label>Menge (g oder ml)</label>
-      <input type="number" id="portionAmount" placeholder="100" inputmode="decimal" autofocus>
+      <label>Einheit</label>
+      <select id="portionUnit" onchange="onPortionUnitChange()"></select>
+    </div>
+    <div class="input-group">
+      <label id="portionAmountLabel">Menge</label>
+      <input type="number" id="portionAmount" placeholder="100" inputmode="decimal" autofocus oninput="updatePortionPreview()">
     </div>
     <div class="input-group">
       <label>Mahlzeit</label>
@@ -1272,6 +1282,10 @@ input[type="range"]::-moz-range-thumb {
         <option value="Snack 2">Snack 2</option>
       </select>
     </div>
+    <div class="portion-preview">
+      <div class="pp-kcal" id="portionPreviewKcal">0 kcal</div>
+      <div class="pp-sub" id="portionPreviewSub">—</div>
+    </div>
     <button class="btn" onclick="addPortion()">+ Hinzufügen</button>
     <div style="height:8px"></div>
     <button class="btn btn-secondary" onclick="closePortionModal()">Abbrechen</button>
@@ -1283,7 +1297,7 @@ input[type="range"]::-moz-range-thumb {
   <div class="modal">
     <div class="modal-title" id="editFoodTitle">—</div>
     <div class="input-group">
-      <label>Menge (g oder ml)</label>
+      <label id="editFoodAmountLabel">Menge</label>
       <input type="number" id="editFoodAmount" placeholder="100" inputmode="decimal">
     </div>
     <div class="input-group">
@@ -1300,6 +1314,35 @@ input[type="range"]::-moz-range-thumb {
     <button class="btn" onclick="saveEditFood()">✓ Speichern</button>
     <div style="height:8px"></div>
     <button class="btn btn-secondary" onclick="closeEditFood()">Abbrechen</button>
+  </div>
+</div>
+
+<!-- PRODUKT PRÜFEN / BEARBEITEN MODAL -->
+<div class="modal-bg" id="foodCorrectModal">
+  <div class="modal">
+    <div class="modal-title" id="fcTitle">Produkt prüfen</div>
+    <div id="fcHint" style="font-size:13px; color:var(--accent); background:var(--accent-soft); border-radius:10px; padding:10px; margin-bottom:12px; display:none;"></div>
+    <img id="fcImg" class="food-thumb" style="width:100%; height:120px; border-radius:12px; margin-bottom:12px; display:none;" alt="">
+    <div class="input-group">
+      <label>Bezeichnung</label>
+      <input type="text" id="fcName" placeholder="Produktname">
+    </div>
+    <div class="input-group">
+      <label>kcal pro 100 g</label>
+      <input type="number" id="fcKcal" inputmode="decimal" placeholder="0">
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin:-6px 2px 12px;">
+      <span class="mono" id="fcMacroKcal" style="font-size:11px; color:var(--text-dim);">aus Makros: 0 kcal</span>
+      <button class="btn-small btn-ghost" style="width:auto;" onclick="fcApplyMacroKcal()">↻ übernehmen</button>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+      <div class="input-group"><label>Protein</label><input type="number" id="fcP" inputmode="decimal" placeholder="0" oninput="fcRecalcHint()"></div>
+      <div class="input-group"><label>Fett</label><input type="number" id="fcF" inputmode="decimal" placeholder="0" oninput="fcRecalcHint()"></div>
+      <div class="input-group"><label>KH</label><input type="number" id="fcC" inputmode="decimal" placeholder="0" oninput="fcRecalcHint()"></div>
+    </div>
+    <button class="btn" onclick="confirmFoodCorrect()">✓ Übernehmen</button>
+    <div style="height:8px"></div>
+    <button class="btn btn-secondary" onclick="closeFoodCorrect()">Abbrechen</button>
   </div>
 </div>
 
@@ -2035,14 +2078,14 @@ const FOOD_DB = [
   { name: "Rinderhack 5%", kcal: 130, p: 21, f: 5, c: 0 },
   { name: "Lachs (roh)", kcal: 210, p: 20, f: 14, c: 0 },
   { name: "Thunfisch (Dose, Wasser)", kcal: 110, p: 25, f: 1, c: 0 },
-  { name: "Eier (ganz)", kcal: 155, p: 13, f: 11, c: 1 },
+  { name: "Eier (ganz)", kcal: 155, p: 13, f: 11, c: 1, unitG: 60 },
   { name: "Eiweiß", kcal: 52, p: 11, f: 0, c: 1 },
   { name: "Magerquark", kcal: 65, p: 12, f: 0.3, c: 4 },
   { name: "Skyr", kcal: 65, p: 11, f: 0.2, c: 4 },
   { name: "Hüttenkäse", kcal: 100, p: 13, f: 4, c: 3 },
-  { name: "Whey Protein (Pulver)", kcal: 380, p: 75, f: 5, c: 8 },
+  { name: "Whey Protein (Pulver)", kcal: 380, p: 75, f: 5, c: 8, serving: 30 },
   // Kohlenhydrate
-  { name: "Haferflocken", kcal: 370, p: 13, f: 7, c: 60 },
+  { name: "Haferflocken", kcal: 370, p: 13, f: 7, c: 60, serving: 50 },
   { name: "Reis (trocken)", kcal: 350, p: 7, f: 1, c: 78 },
   { name: "Reis (gekocht)", kcal: 130, p: 2.7, f: 0.3, c: 28 },
   { name: "Nudeln Vollkorn (trocken)", kcal: 340, p: 13, f: 2.5, c: 65 },
@@ -3519,7 +3562,7 @@ function renderSaveGroupList(todayN, checkedDefault=true) {
       ${rows.map(({it, i}) => `
         <label style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; margin-bottom:5px;">
           <input type="checkbox" class="grp-chk" value="${i}" ${checkedDefault?'checked':''} style="width:auto; transform:scale(1.3);">
-          <span style="flex:1; font-size:13px;">${it.name} <span style="color:var(--text-faint)">${it.manual ? 'manuell' : it.amount + 'g'}</span></span>
+          <span style="flex:1; font-size:13px;">${it.name} <span style="color:var(--text-faint)">${fmtAmount(it)}</span></span>
           <span class="mono" style="font-size:11px; color:var(--text-dim);">${Math.round(it.kcal)} kcal</span>
         </label>
       `).join('')}
@@ -4348,7 +4391,10 @@ function renderNutrition() {
           </div>
           ${items.map(it => `
             <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:13px;">
-              <div>${it.name} <span style="color:var(--text-faint)">${it.manual ? '✏️ manuell' : (it.amount + 'g')}</span></div>
+              <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                ${it.image ? `<img class="food-thumb" style="width:30px;height:30px;" src="${it.image}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
+                <div>${it.name} <span style="color:var(--text-faint)">${fmtAmount(it)}</span></div>
+              </div>
               <div style="display:flex; gap:6px; align-items:center;">
                 <span class="mono" style="font-size:11px; color: var(--text-dim);">${Math.round(it.kcal)}</span>
                 <button class="btn-small btn-ghost" style="padding:4px 8px; font-family:sans-serif; font-size:13px;" onclick="editFood(${it.idx})">✎</button>
@@ -4438,6 +4484,7 @@ function editFood(idx) {
   editFoodIdx = idx;
   document.getElementById('editFoodTitle').textContent = it.name;
   document.getElementById('editFoodAmount').value = it.amount;
+  document.getElementById('editFoodAmountLabel').textContent = unitLabelText(it.unit || 'g');
   const sel = document.getElementById('editFoodMeal');
   if (sel) sel.value = it.meal || 'Frühstück';
   document.getElementById('editFoodModal').classList.add('active');
@@ -4454,14 +4501,18 @@ function saveEditFood() {
   if (!it) { closeEditFood(); return; }
   const newAmount = parseFloat(document.getElementById('editFoodAmount').value);
   if (!newAmount || newAmount <= 0) { showToast("Ungültige Menge", true); return; }
+  const oldGrams = it.grams != null ? it.grams : it.amount;
+  const gpu = it.gramsPerUnit != null ? it.gramsPerUnit : (it.amount > 0 ? oldGrams / it.amount : 1);
   const per100 = {
-    kcal: it.kcal / it.amount * 100,
-    p: it.p / it.amount * 100,
-    f: it.f / it.amount * 100,
-    c: it.c / it.amount * 100
+    kcal: it.kcal / oldGrams * 100,
+    p: it.p / oldGrams * 100,
+    f: it.f / oldGrams * 100,
+    c: it.c / oldGrams * 100
   };
-  const factor = newAmount / 100;
+  const newGrams = newAmount * gpu;
+  const factor = newGrams / 100;
   it.amount = newAmount;
+  it.grams = +newGrams.toFixed(1);
   it.kcal = Math.round(per100.kcal * factor);
   it.p = +(per100.p * factor).toFixed(1);
   it.f = +(per100.f * factor).toFixed(1);
@@ -4545,6 +4596,66 @@ function allFoods() {
   // gescannte/eigene Lebensmittel zuerst, dann Standard-DB
   return [...state.customFoods, ...FOOD_DB];
 }
+/* ----- Einheiten / Standard-Mengen / Recents ----- */
+function foodGramsPerUnit(food, unit) {
+  if (unit === 'Stück') return (food && food.unitG) ? food.unitG : 100;
+  if (unit === 'Portion') return (food && food.serving) ? food.serving : 100;
+  return 1; // g, ml
+}
+function unitsForFood(food) {
+  const u = ['g', 'ml'];
+  if (food && food.unitG) u.push('Stück');
+  if (food && food.serving) u.push('Portion');
+  return u;
+}
+function defaultUnitFor(food) { return (food && food.unitG) ? 'Stück' : 'g'; }
+function defaultAmountFor(food, unit) {
+  if (unit === 'Stück' || unit === 'Portion') return 1;
+  return (food && food.serving) ? food.serving : 100;
+}
+function unitLabelText(unit) {
+  return unit === 'g' ? 'Menge (g)' : unit === 'ml' ? 'Menge (ml)' : ('Anzahl ' + unit);
+}
+function fmtAmount(it) {
+  if (it.manual) return '✏️ manuell';
+  const u = it.unit || 'g';
+  return (u === 'g' || u === 'ml') ? `${it.amount}${u}` : `${it.amount} ${u}`;
+}
+let recentCache = [];
+function computeRecentFoods() {
+  const cnt = {};
+  Object.values(state.nutrition || {}).forEach(arr => (arr || []).forEach(it => {
+    if (!it || it.manual) return;
+    const g = it.grams != null ? it.grams : it.amount;
+    if (!g) return;
+    const e = cnt[it.name] || (cnt[it.name] = { count: 0, time: 0, it: null });
+    e.count++;
+    if ((it.time || 0) >= e.time) { e.time = it.time || 0; e.it = it; }
+  }));
+  return Object.entries(cnt)
+    .sort((a, b) => b[1].count - a[1].count || b[1].time - a[1].time)
+    .slice(0, 8)
+    .map(([name, e]) => {
+      const it = e.it; const g = it.grams != null ? it.grams : it.amount;
+      return {
+        name,
+        kcal: Math.round(it.kcal / g * 100),
+        p: +(it.p / g * 100).toFixed(1),
+        f: +(it.f / g * 100).toFixed(1),
+        c: +(it.c / g * 100).toFixed(1),
+        image: it.image || null,
+        serving: Math.round(g),
+        unitG: (it.unit === 'Stück' && it.gramsPerUnit) ? it.gramsPerUnit : null
+      };
+    });
+}
+function selectRecent(i) {
+  const food = recentCache[i];
+  if (!food) return;
+  closeFoodModal();
+  openPortion(food);
+}
+
 function renderFoodList() {
   const q = document.getElementById('foodSearch').value.toLowerCase();
   const all = allFoods();
@@ -4552,23 +4663,115 @@ function renderFoodList() {
     .map((f, i) => ({ f, i }))
     .filter(({f}) => f.name.toLowerCase().includes(q));
   const list = document.getElementById('foodList');
-  list.innerHTML = filtered.map(({f, i}) => `
-    <div class="food-item" onclick="selectFoodByIndex(${i})">
+  const foodRow = (f, onclick, actions) => `
+    <div class="food-item" onclick="${onclick}">
+      ${f.image ? `<img class="food-thumb" src="${f.image}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
       <div style="flex:1; min-width:0;">
         <div class="food-name">${f.barcode ? '📷 ' : ''}${f.name}</div>
         <div class="food-macro">P ${f.p}g · F ${f.f}g · C ${f.c}g · 100g</div>
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
-        <div class="food-macro" style="color: var(--accent);">${f.kcal} kcal</div>
-        ${f.barcode ? `<button onclick="event.stopPropagation(); deleteCustomFood('${f.barcode}')" style="background:none;border:none;color:var(--text-faint);font-size:18px;cursor:pointer;padding:0 4px;">×</button>` : ''}
+        <div class="food-macro" style="color:${f.kcal > 0 ? 'var(--accent)' : '#e0a800'};">${f.kcal > 0 ? f.kcal + ' kcal' : '⚠ 0 kcal'}</div>
+        ${actions || ''}
       </div>
-    </div>
-  `).join('') || '<div class="empty">Keine Treffer</div>';
+    </div>`;
+  const custActions = (f) => f.barcode
+    ? `<button onclick="event.stopPropagation(); editCustomFood('${f.barcode}')" style="background:none;border:none;color:var(--text-faint);font-size:15px;cursor:pointer;padding:0 4px;">✎</button><button onclick="event.stopPropagation(); deleteCustomFood('${f.barcode}')" style="background:none;border:none;color:var(--text-faint);font-size:18px;cursor:pointer;padding:0 4px;">×</button>`
+    : '';
+  let html = '';
+  if (!q) {
+    recentCache = computeRecentFoods();
+    if (recentCache.length) {
+      html += '<div class="food-recent-label">↺ Zuletzt / häufig</div>';
+      html += recentCache.map((f, i) => foodRow(f, `selectRecent(${i})`, '')).join('');
+      html += '<div class="food-recent-label">Alle Lebensmittel</div>';
+    }
+  }
+  html += filtered.map(({f, i}) => foodRow(f, `selectFoodByIndex(${i})`, custActions(f))).join('') || (html ? '' : '<div class="empty">Keine Treffer</div>');
+  list.innerHTML = html;
 }
 function deleteCustomFood(barcode) {
   state.customFoods = state.customFoods.filter(f => f.barcode !== barcode);
   saveState();
   renderFoodList();
+}
+
+/* ----- Produkt prüfen / korrigieren / bearbeiten ----- */
+function foodDataSuspicious(food) {
+  // unbrauchbar = keine/keine sinnvollen kcal (auch nach Makro-Ableitung)
+  return !food || !food.kcal || food.kcal <= 0;
+}
+function upsertCustomFood(food) {
+  if (!food.barcode) { state.customFoods.unshift(food); return; }
+  const i = state.customFoods.findIndex(x => x.barcode === food.barcode);
+  if (i >= 0) state.customFoods[i] = food; else state.customFoods.unshift(food);
+}
+function editCustomFood(barcode) {
+  const food = state.customFoods.find(x => x.barcode === barcode);
+  if (!food) return;
+  openFoodCorrect({ mode: 'edit', food: Object.assign({}, food) });
+}
+let fcContext = null;
+function openFoodCorrect(ctx) {
+  fcContext = ctx;
+  const food = ctx.food || {};
+  document.getElementById('fcTitle').textContent =
+    ctx.mode === 'edit' ? 'Produkt bearbeiten' : ctx.mode === 'manual' ? 'Neues Produkt' : 'Produkt prüfen';
+  const hint = document.getElementById('fcHint');
+  if (ctx.mode === 'scan') { hint.style.display = 'block'; hint.textContent = '⚠ Nährwerte unvollständig oder unplausibel – bitte prüfen und ergänzen.'; }
+  else if (ctx.mode === 'manual') { hint.style.display = 'block'; hint.textContent = 'Produkt nicht gefunden – bitte Werte pro 100 g eintragen.'; }
+  else { hint.style.display = 'none'; }
+  const img = document.getElementById('fcImg');
+  if (food.image) { img.src = food.image; img.style.display = 'block'; img.onerror = () => { img.style.display = 'none'; }; }
+  else { img.style.display = 'none'; }
+  document.getElementById('fcName').value = food.name || '';
+  document.getElementById('fcKcal').value = food.kcal || '';
+  document.getElementById('fcP').value = food.p || '';
+  document.getElementById('fcF').value = food.f || '';
+  document.getElementById('fcC').value = food.c || '';
+  fcRecalcHint();
+  document.getElementById('foodCorrectModal').classList.add('active');
+}
+function fcRecalcHint() {
+  const p = parseFloat(document.getElementById('fcP').value) || 0;
+  const f = parseFloat(document.getElementById('fcF').value) || 0;
+  const c = parseFloat(document.getElementById('fcC').value) || 0;
+  document.getElementById('fcMacroKcal').textContent = 'aus Makros: ' + Math.round(4 * p + 9 * f + 4 * c) + ' kcal';
+}
+function fcApplyMacroKcal() {
+  const p = parseFloat(document.getElementById('fcP').value) || 0;
+  const f = parseFloat(document.getElementById('fcF').value) || 0;
+  const c = parseFloat(document.getElementById('fcC').value) || 0;
+  document.getElementById('fcKcal').value = Math.round(4 * p + 9 * f + 4 * c);
+}
+function closeFoodCorrect() {
+  document.getElementById('foodCorrectModal').classList.remove('active');
+  fcContext = null;
+}
+function confirmFoodCorrect() {
+  const ctx = fcContext;
+  if (!ctx) return;
+  const name = document.getElementById('fcName').value.trim();
+  if (!name) { showToast("Bitte einen Namen eingeben", true); return; }
+  const kcal = Math.round(parseFloat(document.getElementById('fcKcal').value) || 0);
+  const p = +(parseFloat(document.getElementById('fcP').value) || 0);
+  const f = +(parseFloat(document.getElementById('fcF').value) || 0);
+  const c = +(parseFloat(document.getElementById('fcC').value) || 0);
+  if (kcal <= 0) { showToast("kcal pro 100 g angeben", true); return; }
+  const food = Object.assign({}, ctx.food, { name: name.slice(0, 60), kcal, p, f, c });
+  delete food.kcalDerived;
+  closeFoodCorrect();
+  if (ctx.mode === 'edit') {
+    const i = state.customFoods.findIndex(x => x.barcode === food.barcode);
+    if (i >= 0) state.customFoods[i] = food;
+    saveState();
+    renderFoodList();
+    showToast("✓ Produkt aktualisiert");
+  } else {
+    upsertCustomFood(food);
+    saveState();
+    openPortion(food);
+  }
 }
 function selectFoodByIndex(i) {
   const food = allFoods()[i];
@@ -4579,29 +4782,62 @@ function selectFoodByIndex(i) {
 function openPortion(food) {
   pendingFood = food;
   document.getElementById('portionTitle').textContent = food.name;
-  document.getElementById('portionAmount').value = 100;
+  const img = document.getElementById('portionImg');
+  if (food.image) { img.src = food.image; img.style.display = 'block'; img.onerror = () => { img.style.display = 'none'; }; }
+  else { img.style.display = 'none'; }
+  const units = unitsForFood(food);
+  const labels = { g: 'Gramm (g)', ml: 'Milliliter (ml)', 'Stück': 'Stück', 'Portion': 'Portion' };
+  const defU = defaultUnitFor(food);
+  document.getElementById('portionUnit').innerHTML =
+    units.map(u => `<option value="${u}"${u === defU ? ' selected' : ''}>${labels[u]}</option>`).join('');
+  document.getElementById('portionAmountLabel').textContent = unitLabelText(defU);
+  document.getElementById('portionAmount').value = defaultAmountFor(food, defU);
+  updatePortionPreview();
   document.getElementById('portionModal').classList.add('active');
   setTimeout(() => document.getElementById('portionAmount').focus(), 100);
+}
+function onPortionUnitChange() {
+  const unit = document.getElementById('portionUnit').value;
+  document.getElementById('portionAmountLabel').textContent = unitLabelText(unit);
+  document.getElementById('portionAmount').value = defaultAmountFor(pendingFood, unit);
+  updatePortionPreview();
+}
+function updatePortionPreview() {
+  if (!pendingFood) return;
+  const unit = document.getElementById('portionUnit').value;
+  const amount = parseFloat(document.getElementById('portionAmount').value) || 0;
+  const grams = amount * foodGramsPerUnit(pendingFood, unit);
+  const kcal = Math.round(pendingFood.kcal * grams / 100);
+  document.getElementById('portionPreviewKcal').textContent = kcal + ' kcal';
+  document.getElementById('portionPreviewSub').textContent =
+    (unit === 'g' || unit === 'ml') ? `${Math.round(grams)} ${unit}` : `${amount} ${unit} · ${Math.round(grams)} g`;
 }
 function closePortionModal() {
   document.getElementById('portionModal').classList.remove('active');
   pendingFood = null;
 }
 function addPortion() {
+  const unit = document.getElementById('portionUnit').value;
   const amount = parseFloat(document.getElementById('portionAmount').value);
   const meal = document.getElementById('portionMeal').value;
   if (!amount || amount <= 0 || !pendingFood) return;
   const f = pendingFood;
-  const factor = amount / 100;
+  const gpu = foodGramsPerUnit(f, unit);
+  const grams = amount * gpu;
+  const factor = grams / 100;
   const today = activeDate();
   if (!state.nutrition[today]) state.nutrition[today] = [];
   state.nutrition[today].push({
     name: f.name,
     amount: amount,
+    unit: unit,
+    grams: +grams.toFixed(1),
+    gramsPerUnit: gpu,
     kcal: Math.round(f.kcal * factor),
     p: +(f.p * factor).toFixed(1),
     f: +(f.f * factor).toFixed(1),
     c: +(f.c * factor).toFixed(1),
+    image: f.image || null,
     meal: meal,
     time: Date.now()
   });
@@ -4683,18 +4919,18 @@ async function onScanSuccess(decodedText) {
     await stopScan();
     if (!food) {
       showToast("Produkt nicht in Datenbank gefunden", true);
-      // Fallback: manuelle Eingabe anbieten
       openManualBarcode(ean);
       return;
     }
-    if (!food.kcal) {
-      showToast("Keine Nährwerte hinterlegt — bitte manuell prüfen", true);
+    if (foodDataSuspicious(food)) {
+      // Daten unbrauchbar (auch nach Makro-Ableitung) → zur Korrektur
+      openFoodCorrect({ mode: 'scan', food: food });
+      return;
     }
-    // in eigene DB übernehmen (für spätere Suche, kein Doppel-Eintrag)
-    if (!state.customFoods.some(f => f.barcode === ean)) {
-      state.customFoods.unshift(food);
-      saveState();
-    }
+    // brauchbare Daten → übernehmen
+    upsertCustomFood(food);
+    saveState();
+    if (food.kcalDerived) showToast("kcal aus Makros berechnet");
     openPortion(food);
   } catch (err) {
     await stopScan();
@@ -4703,7 +4939,7 @@ async function onScanSuccess(decodedText) {
 }
 
 async function lookupBarcode(ean) {
-  const url = `https://world.openfoodfacts.org/api/v2/product/${ean}.json?fields=product_name,product_name_de,brands,nutriments`;
+  const url = `https://world.openfoodfacts.org/api/v2/product/${ean}.json?fields=product_name,product_name_de,brands,nutriments,image_small_url,image_front_small_url,serving_size,serving_quantity`;
   const res = await fetch(url);
   if (!res.ok) return null;
   const data = await res.json();
@@ -4713,30 +4949,44 @@ async function lookupBarcode(ean) {
   // kcal: bevorzugt energy-kcal_100g, sonst aus kJ (energy_100g) umrechnen
   let kcal = n['energy-kcal_100g'];
   if (kcal == null && n['energy_100g'] != null) kcal = n['energy_100g'] / 4.184;
+  const pp = +((n.proteins_100g || 0));
+  const ff = +((n.fat_100g || 0));
+  const cc = +((n.carbohydrates_100g || 0));
+  // Auto-Ableitung: kcal fehlt/0, aber Makros vorhanden → aus Atwater (4/9/4) berechnen
+  let kcalDerived = false;
+  if ((kcal == null || kcal <= 0) && (pp > 0 || ff > 0 || cc > 0)) {
+    kcal = 4 * pp + 9 * ff + 4 * cc;
+    kcalDerived = true;
+  }
   const brand = p.brands ? ' (' + p.brands.split(',')[0].trim() + ')' : '';
   const name = (p.product_name_de || p.product_name || 'Produkt ' + ean) + brand;
-  return {
+  // Portionsgröße: serving_quantity (Zahl) bevorzugt, sonst aus serving_size ("30 g") lesen
+  let serving = null;
+  if (p.serving_quantity != null && !isNaN(parseFloat(p.serving_quantity))) {
+    serving = Math.round(parseFloat(p.serving_quantity));
+  } else if (typeof p.serving_size === 'string') {
+    const m = p.serving_size.match(/([\d.,]+)\s*(g|ml)/i);
+    if (m) serving = Math.round(parseFloat(m[1].replace(',', '.')));
+  }
+  if (!serving || serving <= 0 || serving > 2000) serving = null;
+  const image = p.image_small_url || p.image_front_small_url || null;
+  const food = {
     name: name.slice(0, 60),
     kcal: kcal != null ? Math.round(kcal) : 0,
-    p: +((n.proteins_100g || 0)).toFixed(1),
-    f: +((n.fat_100g || 0)).toFixed(1),
-    c: +((n.carbohydrates_100g || 0)).toFixed(1),
+    p: +pp.toFixed(1),
+    f: +ff.toFixed(1),
+    c: +cc.toFixed(1),
     barcode: ean
   };
+  if (serving) food.serving = serving;
+  if (image) food.image = image;
+  if (kcalDerived) food.kcalDerived = true;
+  return food;
 }
 
-// Fallback: Produkt nicht gefunden → manuell anlegen
+// Fallback: Produkt nicht gefunden → Korrektur-Dialog (leer, mit Barcode)
 function openManualBarcode(ean) {
-  const name = prompt(`Produkt zu Barcode ${ean} nicht gefunden.\n\nName eingeben (oder Abbrechen):`);
-  if (!name) return;
-  const kcal = parseFloat(prompt("kcal pro 100g:") || "0");
-  const p = parseFloat(prompt("Protein pro 100g (g):") || "0");
-  const f = parseFloat(prompt("Fett pro 100g (g):") || "0");
-  const c = parseFloat(prompt("Kohlenhydrate pro 100g (g):") || "0");
-  const food = { name: name.slice(0,60), kcal: Math.round(kcal)||0, p: p||0, f: f||0, c: c||0, barcode: ean };
-  state.customFoods.unshift(food);
-  saveState();
-  openPortion(food);
+  openFoodCorrect({ mode: 'manual', food: { name: '', kcal: 0, p: 0, f: 0, c: 0, barcode: ean } });
 }
 
 /* =================================================================
