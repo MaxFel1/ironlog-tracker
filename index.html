@@ -2618,9 +2618,13 @@ function startHold(exId) {
   const sec = Math.max(1, parseInt(inp && inp.value) || 60);
   startTimer(exId, sec, 'Halten');
 }
+function ytSearchUrl(name) {
+  return 'https://www.youtube.com/results?search_query=' + encodeURIComponent((name || '') + ' Technik Ausführung');
+}
 function exActionsHtml(ex, note) {
   return `<div class="exercise-actions">
           <button class="btn-small btn-ghost" onclick="openNotesModal('${ex.id}')">📝 ${note ? 'Notiz bearbeiten' : 'Notiz hinzufügen'}</button>
+          <a class="btn-small btn-ghost" href="${ytSearchUrl(ex.name)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none; display:inline-flex; align-items:center; gap:5px;"><span style="color:#ff3b30;">▶</span> Technik</a>
           <span class="alt-text">Alt: ${ex.alt}</span>
         </div>`;
 }
