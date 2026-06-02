@@ -4926,27 +4926,29 @@ function renderProgress() {
     ctx.fillText('Noch keine Trainings absolviert', 200, 100);
   }
 
-  // Strength selector — aus tatsächlich trainierten Übungen (History)
+  // Strength selector — nach Übungsname (planübergreifend zusammengeführt)
   const sel = document.getElementById('strengthExercise');
-  const seen = new Map(); // id -> name
+  const seen = new Map(); // name -> name
   state.workoutHistory.forEach(w => w.exercises.forEach(e => {
     const hasStrength = e.sets.some(s => s.w != null && s.r != null);
-    if (hasStrength && !seen.has(e.id)) seen.set(e.id, e.name || getExerciseName(e.id, e.id));
+    const nm = (e.name || getExerciseName(e.id, e.id) || '').trim();
+    if (hasStrength && nm && !seen.has(nm)) seen.set(nm, nm);
   }));
-  const allEx = [...seen.entries()].map(([id, name]) => ({ id, name }));
-  sel.innerHTML = allEx.map(e => `<option value="${e.id}">${e.name}</option>`).join('')
+  const allEx = [...seen.keys()];
+  sel.innerHTML = allEx.map(nm => `<option value="${nm.replace(/"/g,'&quot;')}">${nm}</option>`).join('')
     || '<option>Keine Daten</option>';
   if (allEx.length > 0) renderStrengthChart();
 
-  // PRs
+  // PRs (nach Übungsname zusammengeführt)
   const prs = {};
   state.workoutHistory.forEach(w => {
     w.exercises.forEach(ex => {
+      const nm = (ex.name || getExerciseName(ex.id, ex.id) || '').trim();
       ex.sets.forEach(s => {
         if (s.w == null || s.r == null) return;
         const e1 = estimate1RM(s.w, s.r);
-        if (!prs[ex.id] || e1 > prs[ex.id].e1rm) {
-          prs[ex.id] = { name: ex.name || getExerciseName(ex.id, ex.id), e1rm: e1, w: s.w, r: s.r, date: w.date };
+        if (!prs[nm] || e1 > prs[nm].e1rm) {
+          prs[nm] = { name: nm, e1rm: e1, w: s.w, r: s.r, date: w.date };
         }
       });
     });
@@ -4982,16 +4984,19 @@ function renderProgress() {
 }
 
 function renderStrengthChart() {
-  const exId = document.getElementById('strengthExercise').value;
+  const exName = document.getElementById('strengthExercise').value;
   const data = [];
   state.workoutHistory.forEach(w => {
-    const ex = w.exercises.find(e => e.id === exId);
-    if (ex) {
-      const top = ex.sets.reduce((m,s) =>
-        (s.w != null && s.r != null) ? Math.max(m, estimate1RM(s.w, s.r)) : m, 0);
-      if (top > 0) data.push({ date: w.date, val: top });
-    }
+    let top = 0;
+    w.exercises.forEach(ex => {
+      if ((ex.name || getExerciseName(ex.id, ex.id) || '').trim() !== exName) return;
+      ex.sets.forEach(s => {
+        if (s.w != null && s.r != null) top = Math.max(top, estimate1RM(s.w, s.r));
+      });
+    });
+    if (top > 0) data.push({ date: w.date, val: top });
   });
+  data.sort((a,b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
   if (strengthChartInst) strengthChartInst.destroy();
   const ctx = document.getElementById('strengthChart').getContext('2d');
   if (data.length === 0) {
