@@ -2177,7 +2177,7 @@ function isTrainingDate(dateStr) {
 // Tagesabhängige Ziele (kcal/Makros). Wochenschnitt = Basis-Ziel.
 // Protein & Fett konstant; Differenz über Kohlenhydrate.
 function targetsForDate(dateStr) {
-  const base = state.targets;
+  const base = state.targets || (state.profile ? computeTargets(state.profile) : { kcal: 2000, protein: 150, fat: 70, carbs: 200 });
   if (!cyclingActive()) return { ...base, dayType: null };
   const N = trainingWeekdaySet().size;            // Trainingstage/Woche
   const bump = state.settings.cyclingBump || 0;   // Aufschlag am Trainingstag
@@ -4240,6 +4240,13 @@ AUSGABE: Gib denselben Plan im IRON.LOG-Importformat als JSON zurück (Struktur 
 AKTUELLER PLAN (IRON.LOG-Importformat):
 ${planJson}`;
 }
+
+/* =================================================================
+   NUTRITION VIEW
+   ================================================================= */
+let selectedDate = todayStr();             // gewählter Ernährungs-Tag (Laufzeit)
+function activeDate() { return selectedDate; }
+
 function onNutDateChange() {
   const v = document.getElementById('nutDate').value;
   if (v) selectedDate = v;
@@ -4355,14 +4362,17 @@ function renderNutrition() {
   }
 
   // Meal plan (Raster, kein Sliden) — eigener Plan (Import) oder statische Vorschläge
-  const MP = getMealPlan();
+  const MP = getMealPlan() || [];
   const ap = getActivePlan();
   const custom = !!(ap && Array.isArray(ap.mealPlan) && ap.mealPlan.length) ||
                  (Array.isArray(state.mealPlan) && state.mealPlan.length > 0);
-  if (state.selectedMealDay >= MP.length) state.selectedMealDay = 0;
+  if (!MP.length || state.selectedMealDay >= MP.length) state.selectedMealDay = 0;
   const planList = document.getElementById('mealPlan');
   const day = MP[state.selectedMealDay];
-  planList.innerHTML = `
+  if (!day || !Array.isArray(day.meals)) {
+    planList.innerHTML = '<div class="empty"><div class="empty-icon">🍽</div>Kein Ernährungsplan verfügbar</div>';
+  } else {
+    planList.innerHTML = `
     ${custom ? `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
       <span class="mono" style="font-size:11px; color:var(--accent);">★ Eigener Plan (importiert)</span>
       <button class="btn-small btn-ghost" style="width:auto;" onclick="resetMealPlan()">Zurücksetzen</button>
@@ -4378,10 +4388,11 @@ function renderNutrition() {
           <div class="meal-name">${m.name}</div>
           <div class="meal-kcal">${m.kcal} kcal</div>
         </div>
-        <ul class="meal-items">${m.items.map(i => `<li>· ${i}</li>`).join('')}</ul>
+        <ul class="meal-items">${(m.items || []).map(i => `<li>· ${i}</li>`).join('')}</ul>
       </div>
     `).join('')}
   `;
+  }
 }
 
 function getMealPlan() {
