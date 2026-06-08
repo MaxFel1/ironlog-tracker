@@ -4748,7 +4748,7 @@ function renderFoodList() {
     if (onlineLoading && onlineQuery === raw) {
       html += '<div class="food-loading">Suche läuft…</div>';
     } else if (onlineError && onlineQuery === raw) {
-      html += '<div class="empty" style="padding:12px;">Online-Suche nicht erreichbar (offline?)</div>';
+      html += '<div class="empty" style="padding:12px;">Online-Suche gerade nicht verfügbar</div>';
     } else if (onlineResultsCurrent.length && onlineQuery === raw) {
       html += onlineResultsCurrent.map((f, i) => foodRow(f, `selectOnlineFood(${i})`, '')).join('');
     } else if (onlineQuery === raw) {
@@ -5029,7 +5029,7 @@ function offProductToFood(p, code) {
     if (m) serving = Math.round(parseFloat(m[1].replace(',', '.')));
   }
   if (!serving || serving <= 0 || serving > 2000) serving = null;
-  const image = p.image_small_url || p.image_front_small_url || null;
+  const image = p.image_small_url || p.image_front_small_url || p.image_url || p.image_front_url || null;
   const food = {
     name: (name || '').slice(0, 60),
     kcal: kcal != null ? Math.round(kcal) : 0,
@@ -5051,17 +5051,16 @@ async function lookupBarcode(ean) {
   return offProductToFood(data.product, ean);
 }
 
-// Volltext-Namenssuche über Open Food Facts (ergänzt die lokale DB)
+// Volltext-Namenssuche über Open Food Facts (Search-a-licious; der alte cgi/search.pl liefert global 503)
 async function searchFoodOnline(q) {
-  const fields = 'code,product_name,product_name_de,brands,nutriments,image_small_url,image_front_small_url,serving_size,serving_quantity';
-  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=20&fields=${fields}`;
+  const url = `https://search.openfoodfacts.org/search?q=${encodeURIComponent(q)}&page_size=20&lang=de`;
   const res = await fetch(url);
   if (!res.ok) return [];
   const data = await res.json();
-  const prods = data.products || [];
+  const hits = data.hits || data.products || [];
   const seen = new Set(state.customFoods.map(f => f.barcode).filter(Boolean));
   const out = [];
-  for (const p of prods) {
+  for (const p of hits) {
     const food = offProductToFood(p, p.code);
     if (!food.name || food.kcal <= 0) continue;          // nur brauchbare Treffer
     if (food.barcode && seen.has(food.barcode)) continue; // schon lokal vorhanden
