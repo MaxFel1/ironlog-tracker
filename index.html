@@ -1,4 +1,9 @@
 <!DOCTYPE html>
+<!--
+  IRON.LOG — Fitness-Tracking-PWA
+  © 2026 Markus Felser. Alle Rechte vorbehalten.
+  Proprietärer Code – keine Nutzung, Vervielfältigung, Bearbeitung oder Verbreitung ohne ausdrückliche schriftliche Genehmigung des Urhebers.
+-->
 <html lang="de">
 <head>
 <meta charset="UTF-8">
@@ -303,6 +308,9 @@ main { padding: 20px; }
 .portion-preview { text-align: center; background: var(--accent-soft); border-radius: 12px; padding: 10px; margin-bottom: 14px; }
 .portion-preview .pp-kcal { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 22px; color: var(--accent); }
 .portion-preview .pp-sub { font-size: 11px; color: var(--text-dim); }
+.food-loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; color: var(--text-dim); font-size: 13px; }
+.food-loading::before { content: ''; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: foodspin 0.8s linear infinite; }
+@keyframes foodspin { to { transform: rotate(360deg); } }
 
 .cues {
   font-size: 13px;
@@ -1239,7 +1247,7 @@ input[type="range"]::-moz-range-thumb {
     <div class="modal-title">Lebensmittel</div>
     <button class="btn btn-secondary btn-small" onclick="closeFoodModal(); startScan();" style="width:100%; margin-bottom:12px;">📷 Barcode scannen</button>
     <div class="food-search">
-      <input type="text" id="foodSearch" placeholder="Suchen..." oninput="renderFoodList()" style="width:100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: var(--text); font-family: 'JetBrains Mono', monospace;">
+      <input type="text" id="foodSearch" placeholder="Suchen (auch online)..." oninput="onFoodSearchInput()" style="width:100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: var(--text); font-family: 'JetBrains Mono', monospace;">
     </div>
     <div class="food-list" id="foodList"></div>
     <div style="height:12px"></div>
@@ -4660,8 +4668,50 @@ function selectRecent(i) {
   openPortion(food);
 }
 
+let onlineCache = {};
+let onlineResultsCurrent = [];
+let onlineLoading = false;
+let onlineQuery = '';
+let onlineError = false;
+let foodSearchTimer = null;
+
+function onFoodSearchInput() {
+  renderFoodList(); // lokale Treffer sofort
+  const q = document.getElementById('foodSearch').value.trim();
+  clearTimeout(foodSearchTimer);
+  onlineError = false;
+  if (q.length < 3) { onlineLoading = false; onlineQuery = ''; onlineResultsCurrent = []; renderFoodList(); return; }
+  if (onlineCache[q]) { onlineResultsCurrent = onlineCache[q]; onlineLoading = false; onlineQuery = q; renderFoodList(); return; }
+  onlineLoading = true; onlineQuery = q; onlineResultsCurrent = [];
+  renderFoodList(); // Spinner zeigen
+  foodSearchTimer = setTimeout(async () => {
+    try {
+      const results = await searchFoodOnline(q);
+      onlineCache[q] = results;
+      if (document.getElementById('foodSearch').value.trim() === q) {
+        onlineResultsCurrent = results; onlineLoading = false; onlineQuery = q; renderFoodList();
+      }
+    } catch (e) {
+      if (document.getElementById('foodSearch').value.trim() === q) {
+        onlineResultsCurrent = []; onlineLoading = false; onlineError = true; onlineQuery = q; renderFoodList();
+      }
+    }
+  }, 450);
+}
+function selectOnlineFood(i) {
+  const food = onlineResultsCurrent[i];
+  if (!food) return;
+  closeFoodModal();
+  if (foodDataSuspicious(food)) { openFoodCorrect({ mode: 'scan', food }); return; }
+  upsertCustomFood(food);
+  saveState();
+  if (food.kcalDerived) showToast("kcal aus Makros berechnet");
+  openPortion(food);
+}
+
 function renderFoodList() {
-  const q = document.getElementById('foodSearch').value.toLowerCase();
+  const raw = document.getElementById('foodSearch').value.trim();
+  const q = raw.toLowerCase();
   const all = allFoods();
   const filtered = all
     .map((f, i) => ({ f, i }))
@@ -4691,7 +4741,21 @@ function renderFoodList() {
       html += '<div class="food-recent-label">Alle Lebensmittel</div>';
     }
   }
-  html += filtered.map(({f, i}) => foodRow(f, `selectFoodByIndex(${i})`, custActions(f))).join('') || (html ? '' : '<div class="empty">Keine Treffer</div>');
+  html += filtered.map(({f, i}) => foodRow(f, `selectFoodByIndex(${i})`, custActions(f))).join('');
+  // Online-Sektion (Open Food Facts Namenssuche)
+  if (raw.length >= 3) {
+    html += '<div class="food-recent-label">🌐 Mehr aus Open Food Facts</div>';
+    if (onlineLoading && onlineQuery === raw) {
+      html += '<div class="food-loading">Suche läuft…</div>';
+    } else if (onlineError && onlineQuery === raw) {
+      html += '<div class="empty" style="padding:12px;">Online-Suche nicht erreichbar (offline?)</div>';
+    } else if (onlineResultsCurrent.length && onlineQuery === raw) {
+      html += onlineResultsCurrent.map((f, i) => foodRow(f, `selectOnlineFood(${i})`, '')).join('');
+    } else if (onlineQuery === raw) {
+      html += '<div class="empty" style="padding:12px;">Keine weiteren Online-Treffer</div>';
+    }
+  }
+  if (!html) html = '<div class="empty">Keine Treffer</div>';
   list.innerHTML = html;
 }
 function deleteCustomFood(barcode) {
@@ -4942,29 +5006,21 @@ async function onScanSuccess(decodedText) {
   }
 }
 
-async function lookupBarcode(ean) {
-  const url = `https://world.openfoodfacts.org/api/v2/product/${ean}.json?fields=product_name,product_name_de,brands,nutriments,image_small_url,image_front_small_url,serving_size,serving_quantity`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const data = await res.json();
-  if (data.status !== 1 || !data.product) return null;
-  const p = data.product;
+// OFF-Produkt (Barcode- oder Suchergebnis) → einheitliches Food-Objekt (pro 100 g)
+function offProductToFood(p, code) {
   const n = p.nutriments || {};
-  // kcal: bevorzugt energy-kcal_100g, sonst aus kJ (energy_100g) umrechnen
   let kcal = n['energy-kcal_100g'];
   if (kcal == null && n['energy_100g'] != null) kcal = n['energy_100g'] / 4.184;
   const pp = +((n.proteins_100g || 0));
   const ff = +((n.fat_100g || 0));
   const cc = +((n.carbohydrates_100g || 0));
-  // Auto-Ableitung: kcal fehlt/0, aber Makros vorhanden → aus Atwater (4/9/4) berechnen
   let kcalDerived = false;
   if ((kcal == null || kcal <= 0) && (pp > 0 || ff > 0 || cc > 0)) {
     kcal = 4 * pp + 9 * ff + 4 * cc;
     kcalDerived = true;
   }
   const brand = p.brands ? ' (' + p.brands.split(',')[0].trim() + ')' : '';
-  const name = (p.product_name_de || p.product_name || 'Produkt ' + ean) + brand;
-  // Portionsgröße: serving_quantity (Zahl) bevorzugt, sonst aus serving_size ("30 g") lesen
+  const name = (p.product_name_de || p.product_name || ('Produkt ' + (code || ''))) + brand;
   let serving = null;
   if (p.serving_quantity != null && !isNaN(parseFloat(p.serving_quantity))) {
     serving = Math.round(parseFloat(p.serving_quantity));
@@ -4975,17 +5031,44 @@ async function lookupBarcode(ean) {
   if (!serving || serving <= 0 || serving > 2000) serving = null;
   const image = p.image_small_url || p.image_front_small_url || null;
   const food = {
-    name: name.slice(0, 60),
+    name: (name || '').slice(0, 60),
     kcal: kcal != null ? Math.round(kcal) : 0,
-    p: +pp.toFixed(1),
-    f: +ff.toFixed(1),
-    c: +cc.toFixed(1),
-    barcode: ean
+    p: +pp.toFixed(1), f: +ff.toFixed(1), c: +cc.toFixed(1),
+    barcode: code || null
   };
   if (serving) food.serving = serving;
   if (image) food.image = image;
   if (kcalDerived) food.kcalDerived = true;
   return food;
+}
+
+async function lookupBarcode(ean) {
+  const url = `https://world.openfoodfacts.org/api/v2/product/${ean}.json?fields=product_name,product_name_de,brands,nutriments,image_small_url,image_front_small_url,serving_size,serving_quantity`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (data.status !== 1 || !data.product) return null;
+  return offProductToFood(data.product, ean);
+}
+
+// Volltext-Namenssuche über Open Food Facts (ergänzt die lokale DB)
+async function searchFoodOnline(q) {
+  const fields = 'code,product_name,product_name_de,brands,nutriments,image_small_url,image_front_small_url,serving_size,serving_quantity';
+  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=20&fields=${fields}`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const data = await res.json();
+  const prods = data.products || [];
+  const seen = new Set(state.customFoods.map(f => f.barcode).filter(Boolean));
+  const out = [];
+  for (const p of prods) {
+    const food = offProductToFood(p, p.code);
+    if (!food.name || food.kcal <= 0) continue;          // nur brauchbare Treffer
+    if (food.barcode && seen.has(food.barcode)) continue; // schon lokal vorhanden
+    out.push(food);
+    if (out.length >= 15) break;
+  }
+  return out;
 }
 
 // Fallback: Produkt nicht gefunden → Korrektur-Dialog (leer, mit Barcode)
