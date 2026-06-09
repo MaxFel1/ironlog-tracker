@@ -311,6 +311,24 @@ main { padding: 20px; }
 .food-loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; color: var(--text-dim); font-size: 13px; }
 .food-loading::before { content: ''; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: foodspin 0.8s linear infinite; }
 @keyframes foodspin { to { transform: rotate(360deg); } }
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cal-month { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px; }
+.cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 4px; }
+.cal-weekdays span { text-align: center; font-size: 10px; color: var(--text-faint); text-transform: uppercase; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-day { position: relative; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 13px; color: var(--text-dim); background: var(--bg-inset); }
+.cal-day.empty { background: transparent; }
+.cal-day.has { color: var(--text); cursor: pointer; font-weight: 600; }
+.cal-day.today { outline: 2px solid var(--accent); }
+.cal-dot { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; }
+.cal-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 10px; color: var(--text-faint); align-items: center; }
+.cal-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.rating-row { display: flex; gap: 8px; margin: 6px 0 10px; }
+.rating-btn { flex: 1; padding: 8px 0; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-inset); color: var(--text-dim); font-family: 'JetBrains Mono', monospace; cursor: pointer; }
+.rating-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.hist-session { background: var(--bg-inset); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+.hist-ex { font-size: 13px; margin: 4px 0; }
+.hist-ex .hist-sets { color: var(--text-dim); }
 
 .cues {
   font-size: 13px;
@@ -1143,6 +1161,26 @@ input[type="range"]::-moz-range-thumb {
 
   <div class="card">
     <div class="card-header">
+      <div class="card-title">Trainingskalender</div>
+      <div class="card-meta">Tippen → ansehen & bewerten</div>
+    </div>
+    <div class="cal-nav">
+      <button class="btn-small btn-ghost" style="width:auto;" onclick="calPrevMonth()">‹</button>
+      <div class="cal-month" id="calMonthLabel">—</div>
+      <button class="btn-small btn-ghost" style="width:auto;" onclick="calNextMonth()">›</button>
+    </div>
+    <div class="cal-weekdays"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
+    <div class="cal-grid" id="workoutCalendar"></div>
+    <div class="cal-legend">
+      <span><i style="background:var(--accent)"></i>Training</span>
+      <span><i style="background:#4caf50"></i>gut (4–5)</span>
+      <span><i style="background:#e0b84f"></i>ok (3)</span>
+      <span><i style="background:#e0584f"></i>schwer (1–2)</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
       <div class="card-title">Volumen pro Woche</div>
       <div class="card-meta">Sätze × Wdh × kg</div>
     </div>
@@ -1263,6 +1301,15 @@ input[type="range"]::-moz-range-thumb {
     <div id="scanStatus" class="mono" style="font-size:12px; color:var(--text-dim); text-align:center; margin-top:12px; min-height:18px;">Kamera wird gestartet…</div>
     <div style="height:12px"></div>
     <button class="btn btn-secondary" onclick="stopScan()">Schließen</button>
+  </div>
+</div>
+
+<!-- TAGES-DETAIL MODAL (Trainingskalender) -->
+<div class="modal-bg" id="dayDetailModal">
+  <div class="modal">
+    <div class="modal-title" id="dayDetailTitle">—</div>
+    <div id="dayDetailBody"></div>
+    <button class="btn btn-secondary" onclick="closeDayDetail()">Schließen</button>
   </div>
 </div>
 
@@ -5250,7 +5297,103 @@ let volumeChartInst = null;
 let strengthChartInst = null;
 let cardioChartInst = null;
 
+/* ----- Trainingskalender (Statistik) ----- */
+function escHtml(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function ratingColor(n) { return ({1:'#e0584f',2:'#e0584f',3:'#e0b84f',4:'#4caf50',5:'#4caf50'})[n] || 'var(--accent)'; }
+function fmtHistSet(s) {
+  if (s.w != null && s.r != null) return `${s.w}kg×${s.r}`;
+  const parts = [];
+  if (s.r != null) parts.push(`${s.r} Wdh`);
+  if (s.w != null) parts.push(`${s.w} kg`);
+  if (s.time_s != null) parts.push(`${s.time_s}s`);
+  if (s.time != null) parts.push(`${s.time} min`);
+  if (s.dist_km != null) parts.push(`${s.dist_km} km`);
+  if (s.dist_m != null) parts.push(`${s.dist_m} m`);
+  if (s.watt != null) parts.push(`${s.watt} W`);
+  if (s.kcal != null) parts.push(`${s.kcal} kcal`);
+  if (s.hr != null) parts.push(`${s.hr} bpm`);
+  return parts.join(' · ') || '✓';
+}
+let calMonth = null;
+function renderWorkoutCalendar() {
+  const cont = document.getElementById('workoutCalendar');
+  if (!cont) return;
+  const now = new Date();
+  if (!calMonth) calMonth = { y: now.getFullYear(), m: now.getMonth() };
+  const { y, m } = calMonth;
+  const monthNames = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  const lbl = document.getElementById('calMonthLabel');
+  if (lbl) lbl.textContent = `${monthNames[m]} ${y}`;
+  const byDate = {};
+  (state.workoutHistory || []).forEach((w, idx) => { if (!w.date) return; (byDate[w.date] = byDate[w.date] || []).push({ w, idx }); });
+  const first = new Date(y, m, 1);
+  const startOffset = (first.getDay() + 6) % 7; // Montag = 0
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const pad = n => String(n).padStart(2, '0');
+  const todayStrLocal = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  let html = '';
+  for (let i = 0; i < startOffset; i++) html += '<div class="cal-day empty"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${y}-${pad(m + 1)}-${pad(d)}`;
+    const sessions = byDate[ds];
+    const has = !!sessions;
+    const isToday = ds === todayStrLocal;
+    let dot = '';
+    if (has) {
+      const rated = sessions.map(s => s.w.rating).filter(r => r);
+      const color = rated.length ? ratingColor(Math.max(...rated)) : 'var(--accent)';
+      dot = `<span class="cal-dot" style="background:${color}"></span>`;
+    }
+    html += `<div class="cal-day ${has ? 'has' : ''} ${isToday ? 'today' : ''}" ${has ? `onclick="openDayDetail('${ds}')"` : ''}><span>${d}</span>${dot}</div>`;
+  }
+  cont.innerHTML = html;
+}
+function calPrevMonth() { if (!calMonth) return; let { y, m } = calMonth; m--; if (m < 0) { m = 11; y--; } calMonth = { y, m }; renderWorkoutCalendar(); }
+function calNextMonth() { if (!calMonth) return; let { y, m } = calMonth; m++; if (m > 11) { m = 0; y++; } calMonth = { y, m }; renderWorkoutCalendar(); }
+
+let dayDetailDate = null;
+function openDayDetail(ds) {
+  dayDetailDate = ds;
+  const sessions = (state.workoutHistory || []).map((w, idx) => ({ w, idx })).filter(o => o.w.date === ds);
+  if (!sessions.length) return;
+  document.getElementById('dayDetailTitle').textContent = fmtDate(ds);
+  const body = sessions.map(({ w, idx }) => {
+    const vol = (w.exercises || []).reduce((s, ex) => s + (ex.sets || []).reduce((ss, set) => ss + ((set.w || 0) * (set.r || 0)), 0), 0);
+    const exHtml = (w.exercises || []).map(ex =>
+      `<div class="hist-ex">${ex.name} <span class="hist-sets">${(ex.sets || []).map(fmtHistSet).join(' · ')}</span></div>`
+    ).join('') || '<div class="hist-ex" style="color:var(--text-faint)">Keine Sätze erfasst</div>';
+    const wod = w.result ? `<div class="hist-ex">🏁 Ergebnis: <span class="hist-sets">${fmtWodResult(w.result)}</span></div>` : '';
+    const r = w.rating || 0;
+    const ratingBtns = [1,2,3,4,5].map(n => `<button class="rating-btn ${r === n ? 'active' : ''}" onclick="setSessionRating(${idx},${n})">${n}</button>`).join('');
+    return `<div class="hist-session">
+      <div style="font-family:'Sora';font-weight:700;margin-bottom:6px;">${w.dayName || 'Training'}${w.format && w.format !== 'standard' ? ` · ${w.format.toUpperCase()}` : ''}</div>
+      ${exHtml}
+      ${wod}
+      ${vol > 0 ? `<div class="hist-ex" style="color:var(--accent);">Volumen: ${Math.round(vol)} kg</div>` : ''}
+      <div style="font-size:11px;color:var(--text-faint);margin-top:10px;">Gefühl / Bewertung (1 = schwer, 5 = top)</div>
+      <div class="rating-row">${ratingBtns}</div>
+      <textarea id="sessNote-${idx}" placeholder="Notiz zu diesem Training…" oninput="setSessionNote(${idx}, this.value)" style="width:100%;min-height:54px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-family:inherit;box-sizing:border-box;">${escHtml(w.sessionNote)}</textarea>
+    </div>`;
+  }).join('');
+  document.getElementById('dayDetailBody').innerHTML = body;
+  document.getElementById('dayDetailModal').classList.add('active');
+}
+function closeDayDetail() { document.getElementById('dayDetailModal').classList.remove('active'); dayDetailDate = null; }
+function setSessionRating(idx, n) {
+  if (!state.workoutHistory[idx]) return;
+  state.workoutHistory[idx].rating = (state.workoutHistory[idx].rating === n) ? null : n;
+  saveState();
+  if (dayDetailDate) openDayDetail(dayDetailDate);
+  renderWorkoutCalendar();
+}
+function setSessionNote(idx, val) {
+  if (!state.workoutHistory[idx]) return;
+  state.workoutHistory[idx].sessionNote = val;
+  saveState();
+}
+
 function renderProgress() {
+  renderWorkoutCalendar();
   // Volume per week
   const byWeek = {};
   state.workoutHistory.forEach(w => {
