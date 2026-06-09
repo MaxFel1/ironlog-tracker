@@ -315,8 +315,8 @@ main { padding: 20px; }
 .cal-month { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px; }
 .cal-weekdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-bottom: 4px; }
 .cal-weekdays span { text-align: center; font-size: 10px; color: var(--text-faint); text-transform: uppercase; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
-.cal-day { position: relative; aspect-ratio: 1 / 1; min-width: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 13px; color: var(--text-dim); background: var(--bg-inset); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-auto-rows: 44px; gap: 4px; }
+.cal-day { position: relative; min-width: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 13px; color: var(--text-dim); background: var(--bg-inset); }
 .cal-day.empty { background: transparent; }
 .cal-day.has { color: var(--text); cursor: pointer; font-weight: 600; }
 .cal-day.today { outline: 2px solid var(--accent); }
