@@ -5051,16 +5051,32 @@ async function lookupBarcode(ean) {
   return offProductToFood(data.product, ean);
 }
 
-// Volltext-Namenssuche über Open Food Facts (Search-a-licious; der alte cgi/search.pl liefert global 503)
-async function searchFoodOnline(q) {
-  const url = `https://search.openfoodfacts.org/search?q=${encodeURIComponent(q)}&page_size=20&lang=de`;
+// Volltext-Namenssuche über Open Food Facts — zwei Quellen mit Fallback (eine API allein ist unzuverlässig)
+async function offSearchLegacy(q) {
+  const fields = 'code,product_name,product_name_de,brands,nutriments,image_small_url,image_front_small_url,serving_size,serving_quantity';
+  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=20&fields=${fields}`;
   const res = await fetch(url);
-  if (!res.ok) return [];
+  if (!res.ok) return { ok: false, products: [] };
   const data = await res.json();
-  const hits = data.hits || data.products || [];
+  return { ok: true, products: data.products || [] };
+}
+async function offSearchSAL(q) {
+  const url = `https://search.openfoodfacts.org/search?q=${encodeURIComponent(q)}&page_size=20&fields=code,product_name,product_name_de,brands,nutriments,image_url,image_small_url,serving_size,serving_quantity`;
+  const res = await fetch(url);
+  if (!res.ok) return { ok: false, products: [] };
+  const data = await res.json();
+  return { ok: true, products: data.hits || data.products || [] };
+}
+async function searchFoodOnline(q) {
+  let products = [], anyOk = false;
+  try { const r = await offSearchLegacy(q); if (r.ok) { anyOk = true; products = r.products; } } catch (e) {}
+  if (!products.length) {
+    try { const r = await offSearchSAL(q); if (r.ok) { anyOk = true; if (r.products.length) products = r.products; } } catch (e) {}
+  }
+  if (!anyOk) throw new Error('search unavailable'); // beide Quellen nicht erreichbar → Fehleranzeige
   const seen = new Set(state.customFoods.map(f => f.barcode).filter(Boolean));
   const out = [];
-  for (const p of hits) {
+  for (const p of products) {
     const food = offProductToFood(p, p.code);
     if (!food.name || food.kcal <= 0) continue;          // nur brauchbare Treffer
     if (food.barcode && seen.has(food.barcode)) continue; // schon lokal vorhanden
