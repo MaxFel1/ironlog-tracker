@@ -4247,6 +4247,7 @@ function validateAndNormalizePlan(obj) {
   const usedIds = new Set();
   const days = obj.days.map((d, di) => {
     if (!Array.isArray(d.exercises) || d.exercises.length === 0) throw new Error(`Tag ${di+1} hat keine Übungen`);
+    const wodDay = ['for_time','amrap','emom','rounds'].includes(d.format); // WOD: keine erfundenen Pausen
     const exercises = d.exercises.map((e, ei) => {
       if (!e.name) throw new Error(`Tag ${di+1}, Übung ${ei+1}: 'name' fehlt`);
       // eindeutige ID erzeugen (innerhalb dieses Plans)
@@ -4263,7 +4264,7 @@ function validateAndNormalizePlan(obj) {
         sets: Math.max(1, parseInt(e.sets) || 3),
         reps: String(e.reps || "8-12"),
         rpe: String(e.rpe || "8"),
-        rest: Math.max(0, parseInt(e.rest) || (type === 'cardio' ? 60 : 120)),
+        rest: Math.max(0, Number.isFinite(parseInt(e.rest)) ? parseInt(e.rest) : (wodDay ? 0 : (type === 'cardio' ? 60 : 120))),
         cues: sanitizeText(e.cues || ""),
         alt: sanitizeText(e.alt || "")
       };
