@@ -7,7 +7,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0f1216">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -51,6 +51,7 @@ html, body {
   line-height: 1.55;
   min-height: 100vh;
   overscroll-behavior: none;
+  touch-action: manipulation; /* Pinch-Zoom erlaubt, Doppeltipp-Zoom aus (stört beim Satz-Abhaken) */
   -webkit-font-smoothing: antialiased;
 }
 
@@ -106,14 +107,14 @@ header .logo .plate::after {
   background: var(--bg);
 }
 header .logo-tag {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-dim);
   font-weight: 600;
   letter-spacing: 0.08em;
   margin-top: 1px;
 }
 header .date {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-dim);
   font-weight: 500;
 }
@@ -157,7 +158,7 @@ main { padding: 20px; }
   letter-spacing: -0.01em;
 }
 .card-meta {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-dim);
   font-weight: 500;
 }
@@ -176,7 +177,7 @@ main { padding: 20px; }
   padding: 16px;
 }
 .stat-label {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-dim);
   font-weight: 500;
   margin-bottom: 8px;
@@ -189,13 +190,13 @@ main { padding: 20px; }
   letter-spacing: -0.02em;
 }
 .stat-unit {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-dim);
   font-weight: 500;
   margin-left: 4px;
 }
 .stat-delta {
-  font-size: 12px;
+  font-size: 13px;
   margin-top: 7px;
   font-weight: 500;
 }
@@ -232,7 +233,7 @@ main { padding: 20px; }
 .btn-danger { background: var(--danger); }
 .btn-small {
   padding: 9px 14px;
-  font-size: 13px;
+  font-size: 14px;
   width: auto;
   border-radius: 10px;
 }
@@ -262,14 +263,14 @@ main { padding: 20px; }
   flex: 1;
 }
 .exercise-target {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-dim);
   margin-top: 5px;
   font-weight: 500;
 }
 .exercise-status {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   padding: 5px 10px;
   border-radius: 999px;
@@ -294,7 +295,7 @@ main { padding: 20px; }
 .ss-move-head .exercise-target { margin-top: 0; }
 .ss-tag {
   display: inline-block; background: var(--accent-soft); color: var(--accent);
-  font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
   padding: 1px 6px; border-radius: 6px; margin-right: 5px;
 }
 .hold-row { display: flex; gap: 8px; align-items: center; margin: 10px 0 2px; }
@@ -304,34 +305,40 @@ main { padding: 20px; }
   font-family: 'JetBrains Mono', monospace; text-align: center;
 }
 .food-thumb { width: 42px; height: 42px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: var(--bg); }
-.food-recent-label { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; margin: 4px 2px 6px; }
+.food-recent-label { font-size: 12px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; margin: 4px 2px 6px; }
 .portion-preview { text-align: center; background: var(--accent-soft); border-radius: 12px; padding: 10px; margin-bottom: 14px; }
 .portion-preview .pp-kcal { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 22px; color: var(--accent); }
-.portion-preview .pp-sub { font-size: 11px; color: var(--text-dim); }
-.food-loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; color: var(--text-dim); font-size: 13px; }
+.portion-preview .pp-sub { font-size: 12px; color: var(--text-dim); }
+.food-loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; color: var(--text-dim); font-size: 14px; }
 .food-loading::before { content: ''; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: foodspin 0.8s linear infinite; }
 @keyframes foodspin { to { transform: rotate(360deg); } }
 .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .cal-month { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px; }
 .cal-weekdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-bottom: 4px; }
-.cal-weekdays span { text-align: center; font-size: 10px; color: var(--text-faint); text-transform: uppercase; }
+.cal-weekdays span { text-align: center; font-size: 11px; color: var(--text-faint); text-transform: uppercase; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-auto-rows: 44px; gap: 4px; }
-.cal-day { position: relative; min-width: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 13px; color: var(--text-dim); background: var(--bg-inset); }
+.cal-day { position: relative; min-width: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 14px; color: var(--text-dim); background: var(--bg-inset); }
 .cal-day.empty { background: transparent; }
 .cal-day.has { color: var(--text); cursor: pointer; font-weight: 600; }
 .cal-day.today { outline: 2px solid var(--accent); }
 .cal-dot { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; }
-.cal-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 10px; color: var(--text-faint); align-items: center; }
+.cal-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: var(--text-faint); align-items: center; }
 .cal-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
 .rating-row { display: flex; gap: 8px; margin: 6px 0 10px; }
 .rating-btn { flex: 1; padding: 8px 0; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-inset); color: var(--text-dim); font-family: 'JetBrains Mono', monospace; cursor: pointer; }
 .rating-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 .hist-session { background: var(--bg-inset); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
-.hist-ex { font-size: 13px; margin: 4px 0; }
+.hist-ex { font-size: 14px; margin: 4px 0; }
 .hist-ex .hist-sets { color: var(--text-dim); }
+.cons-week { display: flex; gap: 6px; margin-top: 10px; }
+.cons-day { flex: 1; text-align: center; }
+.cons-day .cd-dot { width: 100%; height: 8px; border-radius: 4px; background: var(--bg-inset); }
+.cons-day.trained .cd-dot { background: var(--accent); }
+.cons-day.today .cd-dot { outline: 1.5px solid var(--accent); outline-offset: 1.5px; }
+.cons-day .cd-lbl { font-size: 11px; color: var(--text-faint); margin-top: 4px; text-transform: uppercase; }
 
 .cues {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-dim);
   margin-bottom: 14px;
   padding: 12px 14px;
@@ -351,7 +358,7 @@ main { padding: 20px; }
 }
 .set-num {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-dim);
   text-align: center;
 }
@@ -375,7 +382,7 @@ main { padding: 20px; }
 .set-row input.last {
   background: var(--bg-elevated);
   color: var(--text-faint);
-  font-size: 13px;
+  font-size: 14px;
 }
 .set-check {
   width: 40px;
@@ -399,7 +406,7 @@ main { padding: 20px; }
   display: grid;
   grid-template-columns: 28px 1fr 1fr 40px;
   gap: 8px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-dim);
   font-weight: 600;
   text-align: center;
@@ -433,7 +440,7 @@ main { padding: 20px; }
   justify-content: space-between;
 }
 .timer-label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-dim);
   font-weight: 600;
   text-transform: uppercase;
@@ -456,13 +463,13 @@ main { padding: 20px; }
   padding: 9px 14px;
   border-radius: 10px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
 }
 
 /* NOTES & ACTIONS */
 .note-display {
-  font-size: 13px;
+  font-size: 14px;
   color: #f3d27a;
   background: rgba(251,191,36,0.10);
   border-left: 3px solid var(--warning);
@@ -483,10 +490,10 @@ main { padding: 20px; }
 .exercise-actions .btn-small {
   font-family: 'Manrope', sans-serif;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
 }
 .alt-text {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-faint);
 }
 /* Range slider */
@@ -531,7 +538,7 @@ input[type="range"]::-moz-range-thumb {
   border: 1px solid var(--border);
 }
 .macro-label {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -545,7 +552,7 @@ input[type="range"]::-moz-range-thumb {
   margin-top: 3px;
 }
 .macro-target {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-faint);
 }
 .progress-bar {
@@ -583,12 +590,12 @@ input[type="range"]::-moz-range-thumb {
 }
 .meal-kcal {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--accent);
   font-weight: 700;
 }
 .meal-items {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-dim);
   line-height: 1.7;
 }
@@ -603,7 +610,7 @@ input[type="range"]::-moz-range-thumb {
 }
 .input-group label {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-dim);
   font-weight: 600;
   margin-bottom: 7px;
@@ -642,7 +649,7 @@ input[type="range"]::-moz-range-thumb {
   color: var(--text-dim);
   font-family: 'Manrope', sans-serif;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -685,7 +692,7 @@ input[type="range"]::-moz-range-thumb {
 .nav-icon { font-size: 20px; line-height: 1; display: flex; }
 .nav-icon svg { width: 22px; height: 22px; }
 .nav-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   margin-top: 4px;
   letter-spacing: 0;
@@ -719,7 +726,7 @@ input[type="range"]::-moz-range-thumb {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
@@ -727,7 +734,7 @@ input[type="range"]::-moz-range-thumb {
 .history-item .hist-btn.del { color: var(--danger); }
 .history-item .hist-btn:active { background: var(--bg-elevated); }
 .history-date {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-dim);
 }
 .history-value {
@@ -773,7 +780,7 @@ input[type="range"]::-moz-range-thumb {
   display: flex; align-items: center; justify-content: center;
 }
 .onb-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px; }
-.onb-sub { font-size: 12px; color: var(--text-dim); line-height: 1.4; margin-top: 2px; }
+.onb-sub { font-size: 13px; color: var(--text-dim); line-height: 1.4; margin-top: 2px; }
 
 .wod-focus {
   position: fixed; inset: 0; z-index: 150; background: var(--bg);
@@ -797,7 +804,7 @@ input[type="range"]::-moz-range-thumb {
 .wf-sub { font-size: 14px; color: var(--text-faint); margin-top: 6px; }
 .wf-list { width: 100%; max-width: 460px; margin: 8px 0; }
 .wf-li { display: flex; justify-content: space-between; gap: 10px; padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 6px; font-size: 15px; text-align: left; }
-.wf-li-t { color: var(--text-dim); font-size: 13px; white-space: nowrap; }
+.wf-li-t { color: var(--text-dim); font-size: 14px; white-space: nowrap; }
 .wf-counter { font-size: 18px; margin: 10px 0; }
 .wf-counter b { font-size: 28px; color: var(--accent); }
 .wf-bigbtn {
@@ -849,7 +856,7 @@ input[type="range"]::-moz-range-thumb {
 .food-name { font-size: 14px; font-weight: 500; }
 .food-macro {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-dim);
 }
 
@@ -876,7 +883,7 @@ input[type="range"]::-moz-range-thumb {
 .setting-label { font-size: 14px; }
 .setting-value {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-dim);
 }
 
@@ -892,7 +899,7 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 999px;
   font-family: 'Manrope', sans-serif;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   z-index: 300;
   opacity: 0;
   transition: opacity 0.3s;
@@ -952,7 +959,7 @@ input[type="range"]::-moz-range-thumb {
   padding: 9px 0;
   text-align: center;
   border-radius: 10px;
-  font-size: 12px;
+  font-size: 13px;
 }
 </style>
 </head>
@@ -989,6 +996,10 @@ input[type="range"]::-moz-range-thumb {
   <h1 class="view-title">HEUTE</h1>
   <p class="view-subtitle" id="todaySubtitle">Tag wählen oder fortsetzen</p>
 
+  <div id="backupReminder"></div>
+  <div id="deloadHint"></div>
+  <div id="consistencyWidget"></div>
+
   <div class="stat-grid">
     <div class="stat">
       <div class="stat-label">Körpergewicht</div>
@@ -1020,11 +1031,11 @@ input[type="range"]::-moz-range-thumb {
     <button class="btn btn-secondary" onclick="navigateTo('nutrition')">🍽 Mahlzeit loggen</button>
   </div>
 
-  <div id="ownerLine" style="text-align:center; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); margin-top:8px; letter-spacing:0.05em;">
+  <div id="ownerLine" style="text-align:center; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-faint); margin-top:8px; letter-spacing:0.05em;">
     IRON.LOG
   </div>
   <div style="text-align:center; margin-top:10px;">
-    <button onclick="openFeedback()" style="background:none; border:none; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:12px; cursor:pointer; text-decoration:underline;">💬 Feedback geben</button>
+    <button onclick="openFeedback()" style="background:none; border:none; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; text-decoration:underline;">💬 Feedback geben</button>
   </div>
 </section>
 
@@ -1098,7 +1109,7 @@ input[type="range"]::-moz-range-thumb {
       </div>
     </div>
     <div id="todayFoodList"></div>
-    <div style="text-align:center; font-size:11px; color:var(--text-faint); margin-top:12px;">‹ wischen, um den Tag zu wechseln ›</div>
+    <div style="text-align:center; font-size:12px; color:var(--text-faint); margin-top:12px;">‹ wischen, um den Tag zu wechseln ›</div>
   </div>
 
   <div class="card">
@@ -1298,7 +1309,7 @@ input[type="range"]::-moz-range-thumb {
   <div class="modal">
     <div class="modal-title">📷 Barcode scannen</div>
     <div id="reader" style="width:100%; border-radius:12px; overflow:hidden; background:#000; min-height:200px;"></div>
-    <div id="scanStatus" class="mono" style="font-size:12px; color:var(--text-dim); text-align:center; margin-top:12px; min-height:18px;">Kamera wird gestartet…</div>
+    <div id="scanStatus" class="mono" style="font-size:13px; color:var(--text-dim); text-align:center; margin-top:12px; min-height:18px;">Kamera wird gestartet…</div>
     <div style="height:12px"></div>
     <button class="btn btn-secondary" onclick="stopScan()">Schließen</button>
   </div>
@@ -1376,7 +1387,7 @@ input[type="range"]::-moz-range-thumb {
 <div class="modal-bg" id="foodCorrectModal">
   <div class="modal">
     <div class="modal-title" id="fcTitle">Produkt prüfen</div>
-    <div id="fcHint" style="font-size:13px; color:var(--accent); background:var(--accent-soft); border-radius:10px; padding:10px; margin-bottom:12px; display:none;"></div>
+    <div id="fcHint" style="font-size:14px; color:var(--accent); background:var(--accent-soft); border-radius:10px; padding:10px; margin-bottom:12px; display:none;"></div>
     <img id="fcImg" class="food-thumb" style="width:100%; height:120px; border-radius:12px; margin-bottom:12px; display:none;" alt="">
     <div class="input-group">
       <label>Bezeichnung</label>
@@ -1387,7 +1398,7 @@ input[type="range"]::-moz-range-thumb {
       <input type="number" id="fcKcal" inputmode="decimal" placeholder="0">
     </div>
     <div style="display:flex; justify-content:space-between; align-items:center; margin:-6px 2px 12px;">
-      <span class="mono" id="fcMacroKcal" style="font-size:11px; color:var(--text-dim);">aus Makros: 0 kcal</span>
+      <span class="mono" id="fcMacroKcal" style="font-size:12px; color:var(--text-dim);">aus Makros: 0 kcal</span>
       <button class="btn-small btn-ghost" style="width:auto;" onclick="fcApplyMacroKcal()">↻ übernehmen</button>
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
@@ -1405,7 +1416,7 @@ input[type="range"]::-moz-range-thumb {
 <div class="modal-bg" id="manualModal">
   <div class="modal">
     <div class="modal-title" id="manualTitle">Mahlzeit manuell</div>
-    <div style="font-size:13px; color:var(--text-dim); margin-bottom:14px;">
+    <div style="font-size:14px; color:var(--text-dim); margin-bottom:14px;">
       Makros schätzen (z.B. Restaurant). Die kcal werden automatisch berechnet.
     </div>
     <div class="input-group">
@@ -1438,7 +1449,7 @@ input[type="range"]::-moz-range-thumb {
       </select>
     </div>
     <div style="text-align:center; background:var(--accent-soft); border-radius:12px; padding:12px; margin-bottom:14px;">
-      <div style="font-size:11px; color:var(--text-dim); font-weight:600;">VORSCHAU</div>
+      <div style="font-size:12px; color:var(--text-dim); font-weight:600;">VORSCHAU</div>
       <div class="mono" id="manKcalPreview" style="font-family:'Sora',sans-serif; font-weight:700; font-size:26px; color:var(--accent);">0 kcal</div>
     </div>
     <button class="btn" onclick="addManual()">+ Hinzufügen</button>
@@ -1451,7 +1462,7 @@ input[type="range"]::-moz-range-thumb {
 <div class="modal-bg" id="saveGroupModal">
   <div class="modal">
     <div class="modal-title">Gruppe erstellen</div>
-    <div style="font-size:13px; color:var(--text-dim); margin-bottom:12px;">
+    <div style="font-size:14px; color:var(--text-dim); margin-bottom:12px;">
       Wähle aus, welche Lebensmittel zur Gruppe gehören sollen.
     </div>
     <div class="input-group">
@@ -1533,11 +1544,29 @@ input[type="range"]::-moz-range-thumb {
       </select>
     </div>
     <button class="btn btn-small" onclick="saveProfile()" style="width:100%;">Profil & Makros speichern</button>
-    <div id="targetPreview" class="mono" style="font-size:11px; color:var(--text-dim); text-align:center; margin-top:8px;"></div>
+    <div id="targetPreview" class="mono" style="font-size:12px; color:var(--text-dim); text-align:center; margin-top:8px;"></div>
 
     <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
     <div style="font-family:'Sora'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Trainingsplan</div>
     <button class="btn btn-secondary btn-small" onclick="closeSettings(); openPlansModal();" style="width:100%;">Pläne verwalten / importieren</button>
+
+    <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
+    <div style="font-family:'Sora'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Anzeige</div>
+    <div class="input-group">
+      <label>Textgröße</label>
+      <select id="setTextScale" onchange="updateTextScale()">
+        <option value="1">Normal</option>
+        <option value="1.1">Groß (+10 %)</option>
+        <option value="1.2">Sehr groß (+20 %)</option>
+      </select>
+    </div>
+
+    <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
+    <div style="font-family:'Sora'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Wochenziel</div>
+    <div class="input-group">
+      <label>Einheiten pro Woche (leer = automatisch aus aktivem Plan)</label>
+      <input type="number" id="setWeeklyGoal" min="1" max="7" inputmode="numeric" placeholder="auto" onchange="updateWeeklyGoal()">
+    </div>
 
     <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
     <div style="font-family:'Sora'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Kalorien-Cycling</div>
@@ -1551,7 +1580,7 @@ input[type="range"]::-moz-range-thumb {
       <label>Aufschlag am Trainingstag: <span id="bumpLabel" class="mono">250</span> kcal</label>
       <input type="range" id="setBump" min="0" max="700" step="50" value="250" oninput="onBumpInput()" onchange="updateSettings()" style="width:100%;">
     </div>
-    <div id="cyclingInfo" style="font-size:12px; color:var(--text-dim); line-height:1.5;"></div>
+    <div id="cyclingInfo" style="font-size:13px; color:var(--text-dim); line-height:1.5;"></div>
 
     <div id="cycleSection">
       <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
@@ -1572,8 +1601,8 @@ input[type="range"]::-moz-range-thumb {
           <label>Zykluslänge: <span id="cycleLenLabel" class="mono">28</span> Tage</label>
           <input type="range" id="setCycleLen" min="21" max="35" step="1" value="28" oninput="onCycleLenInput()" onchange="updateCycleSettings()" style="width:100%;">
         </div>
-        <div id="cyclePhaseInfo" style="font-size:12px; color:var(--text-dim); line-height:1.5;"></div>
-        <div style="font-size:11px; color:var(--text-faint); line-height:1.5; margin-top:8px;">
+        <div id="cyclePhaseInfo" style="font-size:13px; color:var(--text-dim); line-height:1.5;"></div>
+        <div style="font-size:12px; color:var(--text-faint); line-height:1.5; margin-top:8px;">
           Schätzung anhand deiner Angaben – keine medizinische Vorgabe. Manuelles Umschalten hat immer Vorrang.
           Daten bleiben nur lokal auf diesem Gerät.
         </div>
@@ -1598,7 +1627,7 @@ input[type="range"]::-moz-range-thumb {
     <button class="btn btn-secondary btn-small" onclick="openFeedback()" style="width:100%;">💬 Feedback geben</button>
 
     <div style="height:16px"></div>
-    <div style="border-top:1px solid var(--border); padding-top:14px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim);">
+    <div style="border-top:1px solid var(--border); padding-top:14px; font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text-dim);">
       Besitzer: <span id="settingsOwner" style="color:var(--text);">—</span><br>
       IRON.LOG — Hypertrophy Tracker
     </div>
@@ -1611,7 +1640,7 @@ input[type="range"]::-moz-range-thumb {
 <div class="modal-bg" id="groupsModal">
   <div class="modal">
     <div class="modal-title">📦 Mahlzeiten-Gruppen</div>
-    <div style="font-size:13px; color:var(--text-dim); margin-bottom:14px;">
+    <div style="font-size:14px; color:var(--text-dim); margin-bottom:14px;">
       Tippe eine Gruppe an, um alle enthaltenen Lebensmittel auf einmal zu „heute" hinzuzufügen. Neue Gruppen erstellst du über „Als Gruppe" bei „Heute gegessen".
     </div>
     <div id="groupsList"></div>
@@ -1629,7 +1658,7 @@ input[type="range"]::-moz-range-thumb {
     <button class="btn btn-small" onclick="openAiPlanModal()" style="width:100%;">🧠 Plan mit KI erstellen</button>
     <div style="height:8px"></div>
     <button class="btn btn-small btn-secondary" id="refineBtn" onclick="openRefineModal()" style="width:100%;">🔄 Plan verfeinern</button>
-    <div id="refineHint" style="font-size:11px; color:var(--text-faint); margin:6px 2px 0; line-height:1.5;"></div>
+    <div id="refineHint" style="font-size:12px; color:var(--text-faint); margin:6px 2px 0; line-height:1.5;"></div>
     <div style="height:8px"></div>
     <button class="btn btn-secondary btn-small" onclick="document.getElementById('planImportFile').click()" style="width:100%;">⬆ Plan importieren (JSON)</button>
     <input type="file" id="planImportFile" accept=".json" style="display:none" onchange="importPlan(event)">
@@ -1647,7 +1676,7 @@ input[type="range"]::-moz-range-thumb {
 
     <div id="aiTargetInfo" style="font-size:12.5px; border-radius:10px; padding:10px 12px; margin-bottom:14px; line-height:1.5;"></div>
 
-    <div style="font-size:13px; color:var(--text-dim); margin-bottom:16px; line-height:1.6;">
+    <div style="font-size:14px; color:var(--text-dim); margin-bottom:16px; line-height:1.6;">
       Felder ausfüllen → Prompt kopieren → bei deiner KI einfügen → die erzeugte <code>.json</code>
       herunterladen → unten über „Plan importieren" laden (Training + Ernährung).
     </div>
@@ -1778,12 +1807,12 @@ input[type="range"]::-moz-range-thumb {
       <input type="text" id="aiAvoid" placeholder="z.B. keine Linsen, laktosefrei, kein Schwein" oninput="refreshAiPrompt()">
     </div>
 
-    <label style="display:block; font-size:12px; color:var(--text-dim); font-weight:600; margin:6px 0 7px;">Dein fertiger Prompt</label>
-    <textarea id="aiPromptText" readonly rows="8" style="width:100%; background:var(--bg-inset); border:1px solid var(--border); border-radius:12px; padding:12px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.5; resize:vertical;"></textarea>
+    <label style="display:block; font-size:13px; color:var(--text-dim); font-weight:600; margin:6px 0 7px;">Dein fertiger Prompt</label>
+    <textarea id="aiPromptText" readonly rows="8" style="width:100%; background:var(--bg-inset); border:1px solid var(--border); border-radius:12px; padding:12px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13px; line-height:1.5; resize:vertical;"></textarea>
     <div style="height:10px"></div>
     <button class="btn" onclick="copyAiPrompt()">📋 Prompt kopieren</button>
     <div style="height:8px"></div>
-    <div style="font-size:11px; color:var(--text-faint); line-height:1.5;">
+    <div style="font-size:12px; color:var(--text-faint); line-height:1.5;">
       Tipp: Wenn die KI Text drumherum ausgibt, sag ihr „gib mir nur das reine JSON, ohne Erklärung".
     </div>
     <div style="height:14px"></div>
@@ -1795,10 +1824,10 @@ input[type="range"]::-moz-range-thumb {
 <div class="modal-bg" id="refineModal">
   <div class="modal">
     <div class="modal-title">🔄 Plan verfeinern</div>
-    <p style="font-size:12px; color:var(--text-dim); line-height:1.5; margin:0 0 12px;">
+    <p style="font-size:13px; color:var(--text-dim); line-height:1.5; margin:0 0 12px;">
       Die KI hat keinen Zugriff auf alte Chats – der Prompt enthält alles: Plan, ursprüngliche Vorgaben und deine gesammelten Daten.
     </p>
-    <div id="refineSummary" style="font-size:12px; color:var(--text-dim); line-height:1.6; background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:12px; white-space:pre-wrap;"></div>
+    <div id="refineSummary" style="font-size:13px; color:var(--text-dim); line-height:1.6; background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:12px; white-space:pre-wrap;"></div>
     <div class="input-group">
       <label>Notiz (optional, Kontext für die KI)</label>
       <textarea id="refineNote" rows="2" placeholder="z.B. hatte wenig Zeit, Schulter zwickte, mehr Fokus auf Beine"></textarea>
@@ -1806,7 +1835,7 @@ input[type="range"]::-moz-range-thumb {
     <button class="btn" onclick="copyRefinePrompt()" style="width:100%;">📋 Verfeinern-Prompt kopieren</button>
     <div style="height:8px"></div>
     <button class="btn btn-secondary btn-small" onclick="document.getElementById('planImportFile').click()" style="width:100%;">⬇ Verfeinerten Plan importieren (JSON)</button>
-    <div style="font-size:11px; color:var(--text-faint); margin:6px 2px 0; line-height:1.5;">
+    <div style="font-size:12px; color:var(--text-faint); margin:6px 2px 0; line-height:1.5;">
       Der verfeinerte Plan wird als neuer Plan importiert und aktiviert – dein alter bleibt erhalten.
     </div>
     <div style="height:14px"></div>
@@ -1816,7 +1845,7 @@ input[type="range"]::-moz-range-thumb {
 <div class="modal-bg" id="feedbackModal">
   <div class="modal">
     <div class="modal-title">💬 Feedback</div>
-    <div style="font-size:13px; color:var(--text-dim); margin-bottom:14px;">
+    <div style="font-size:14px; color:var(--text-dim); margin-bottom:14px;">
       Was fehlt dir, was würdest du verbessern? Jede Rückmeldung hilft.
     </div>
     <div class="input-group">
@@ -2338,8 +2367,19 @@ function normalizeState() {
   if (typeof state.settings.cycling !== 'boolean') state.settings.cycling = true;
   if (typeof state.settings.cyclingBump !== 'number') state.settings.cyclingBump = 250;
   if (typeof state.settings.cycleTraining !== 'boolean') state.settings.cycleTraining = false;
+  if (state.settings.weeklyGoal === undefined) state.settings.weeklyGoal = null;
+  if (typeof state.settings.textScale !== 'number') state.settings.textScale = 1;
   if (!state.cycle || typeof state.cycle !== 'object') state.cycle = { lastPeriodStart: null, cycleLength: 28, autoDate: null };
   if (typeof state.cycle.cycleLength !== 'number') state.cycle.cycleLength = 28;
+
+  // --- Backup-Erinnerung (Zeitstempel) ---
+  if (state.lastExport === undefined) state.lastExport = null;
+  if (state.lastBackupReminder === undefined) state.lastBackupReminder = null;
+  if (state.deloadDismissed === undefined) state.deloadDismissed = null;
+
+  // --- Bestandsdaten von HTML-Sonderzeichen bereinigen (idempotent) ---
+  (state.customFoods || []).forEach(f => { if (f && f.name) f.name = sanitizeText(f.name); });
+  (state.mealGroups || []).forEach(g => { if (g && g.name) g.name = sanitizeText(g.name); });
 
   // --- Plan-Migration (alte Versionen: kein state.plans) ---
   if (!Array.isArray(state.plans) || state.plans.length === 0) {
@@ -2438,8 +2478,12 @@ function saveState() {
    UTILS
    ================================================================= */
 function todayStr() {
-  return new Date().toISOString().slice(0,10);
+  // LOKALES Datum (nicht UTC!) – sonst landen Einträge zwischen 0 und 1–2 Uhr nachts am Vortag
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+// Fremde Texte (OFF-Produktnamen, importierte Pläne) von HTML-Sonderzeichen befreien
+function sanitizeText(s) { return String(s == null ? '' : s).replace(/[<>]/g, ''); }
 function fmtDate(s) {
   const d = new Date(s);
   return d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'2-digit'});
@@ -2491,8 +2535,181 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 /* =================================================================
    TODAY VIEW
    ================================================================= */
+/* ----- Backup-Erinnerung (alle 14 Tage, nur bei nennenswerten Daten) ----- */
+const BACKUP_INTERVAL_MS = 14 * 24 * 60 * 60 * 1000;
+function backupDue() {
+  const hasData = (state.workoutHistory || []).length > 0 || Object.keys(state.nutrition || {}).length > 2;
+  if (!hasData) return false;
+  const now = Date.now();
+  if (state.lastBackupReminder && now - state.lastBackupReminder < BACKUP_INTERVAL_MS) return false;
+  return !state.lastExport || now - state.lastExport >= BACKUP_INTERVAL_MS;
+}
+function renderBackupReminder() {
+  const el = document.getElementById('backupReminder');
+  if (!el) return;
+  if (!backupDue()) { el.innerHTML = ''; return; }
+  const days = state.lastExport ? Math.floor((Date.now() - state.lastExport) / 86400000) : null;
+  el.innerHTML = `
+    <div class="card" style="border:1px solid var(--accent); background:var(--accent-soft);">
+      <div style="font-size:14px; margin-bottom:10px;">💾 ${days != null ? `Dein letztes Backup ist ${days} Tage her.` : 'Du hast noch kein Backup deiner Daten erstellt.'}
+      Deine Daten liegen nur lokal im Browser – ein Export schützt vor Verlust.</div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-small" style="flex:1;" onclick="exportData()">⬇ Jetzt sichern</button>
+        <button class="btn-small btn-ghost" style="flex:1;" onclick="dismissBackupReminder()">Später</button>
+      </div>
+    </div>`;
+}
+function dismissBackupReminder() {
+  state.lastBackupReminder = Date.now();
+  saveState();
+  renderBackupReminder();
+}
+
+/* ----- Deload-Hinweis (Leistungs-Stagnation + subjektiv schwere Sessions) ----- */
+const DELOAD_SNOOZE_MS = 21 * 24 * 60 * 60 * 1000;
+function deloadAnalysis() {
+  const now = Date.now();
+  const cutoff = now - 28 * 86400000; // 4-Wochen-Fenster
+  const sessions = (state.workoutHistory || []).filter(w => w.date && new Date(w.date + 'T12:00:00').getTime() >= cutoff);
+  if (sessions.length < 6) return null; // zu wenig Trainingsdaten
+  // Subjektive Belastung: letzte (bis zu) 6 bewertete Sessions im Fenster
+  const rated = sessions.filter(s => s.rating).slice(-6);
+  if (rated.length < 4) return null; // zu wenig Bewertungen für eine Aussage
+  const avgRating = rated.reduce((s, x) => s + x.rating, 0) / rated.length;
+  if (avgRating > 2.5) return null; // fühlt sich nicht überwiegend schwer an
+  // Leistungs-Trend: e1RM pro Übungsname (bester Satz je Session), Least-Squares-Steigung
+  const series = {};
+  sessions.forEach(s => {
+    const t = new Date(s.date + 'T12:00:00').getTime();
+    (s.exercises || []).forEach(ex => {
+      let best = 0;
+      (ex.sets || []).forEach(st => { if (st.w > 0 && st.r > 0) best = Math.max(best, estimate1RM(st.w, st.r)); });
+      if (best > 0) (series[ex.name] = series[ex.name] || []).push({ t, y: best });
+    });
+  });
+  const mains = Object.entries(series).filter(([, a]) => a.length >= 4)
+    .sort((a, b) => b[1].length - a[1].length).slice(0, 5);
+  if (mains.length < 2) return null; // zu wenige Hauptübungen mit genug Datenpunkten
+  const stagnant = [];
+  mains.forEach(([name, pts]) => {
+    pts.sort((a, b) => a.t - b.t);
+    const n = pts.length;
+    const xs = pts.map(p => p.t / (7 * 86400000)); // Wochen
+    const mx = xs.reduce((s, x) => s + x, 0) / n;
+    const my = pts.reduce((s, p) => s + p.y, 0) / n;
+    let num = 0, den = 0;
+    pts.forEach((p, i) => { num += (xs[i] - mx) * (p.y - my); den += (xs[i] - mx) ** 2; });
+    const slope = den ? num / den : 0;          // kg e1RM / Woche
+    if (my > 0 && slope / my <= 0.0015) stagnant.push(name); // ≤ ~0,15 %/Woche = stagniert
+  });
+  if (stagnant.length < Math.ceil(mains.length * 0.6)) return null; // Mehrheit muss stagnieren
+  return { avgRating, stagnant: stagnant.slice(0, 3), totalMains: mains.length, ratedCount: rated.length };
+}
+function renderDeloadHint() {
+  const el = document.getElementById('deloadHint');
+  if (!el) return;
+  if (state.deloadDismissed && Date.now() - state.deloadDismissed < DELOAD_SNOOZE_MS) { el.innerHTML = ''; return; }
+  const a = deloadAnalysis();
+  if (!a) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div class="card" style="border:1px solid #e0b84f; background:rgba(224,184,79,0.08);">
+      <div style="font-size:14px; margin-bottom:10px;">⚖️ <b>Deload erwägen:</b> ${a.stagnant.map(escHtml).join(', ')} stagnieren seit ~3–4 Wochen
+      und deine letzten ${a.ratedCount} bewerteten Trainings fühlten sich überwiegend schwer an (Ø ${a.avgRating.toFixed(1)}/5).
+      Eine leichte Woche (ca. 50–60 % des gewohnten Volumens) kann helfen, danach geht's meist stärker weiter. Nur ein Vorschlag – du kennst deinen Körper am besten.</div>
+      <button class="btn-small btn-ghost" style="width:100%;" onclick="dismissDeloadHint()">Verstanden (3 Wochen ausblenden)</button>
+    </div>`;
+}
+function dismissDeloadHint() {
+  state.deloadDismissed = Date.now();
+  saveState();
+  renderDeloadHint();
+}
+
+/* ----- Konsistenz-Widget (Wochenziel + Wochen-Serie) ----- */
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function weekStartLocal(d) {
+  const x = new Date(d);
+  x.setHours(12, 0, 0, 0);
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); // Montag
+  return x;
+}
+function weeklyGoal() {
+  const g = parseInt(state.settings.weeklyGoal);
+  if (g >= 1 && g <= 7) return g;
+  const ap = getActivePlan();
+  const n = ap && Array.isArray(ap.days) ? ap.days.length : 3;
+  return Math.min(7, Math.max(1, n));
+}
+function consistencyData() {
+  const trainedDates = new Set();
+  (state.workoutHistory || []).forEach(w => { if (w.date) trainedDates.add(w.date); });
+  const goal = weeklyGoal();
+  const now = new Date();
+  const ws = weekStartLocal(now);
+  const todayDs = localDateStr(now);
+  const days = [];
+  let thisCount = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(ws.getTime() + i * 86400000);
+    const ds = localDateStr(d);
+    const trained = trainedDates.has(ds);
+    if (trained) thisCount++;
+    days.push({ ds, trained, isToday: ds === todayDs });
+  }
+  // Wochen-Serie: aufeinanderfolgende erfüllte Wochen rückwärts (laufende zählt, sobald erfüllt)
+  let streak = 0;
+  let cursor = new Date(ws.getTime() - 7 * 86400000);
+  for (let safety = 0; safety < 520; safety++) {
+    let c = 0;
+    for (let i = 0; i < 7; i++) { if (trainedDates.has(localDateStr(new Date(cursor.getTime() + i * 86400000)))) c++; }
+    if (c >= goal) { streak++; cursor = new Date(cursor.getTime() - 7 * 86400000); } else break;
+  }
+  if (thisCount >= goal) streak++;
+  return { goal, thisCount, days, streak };
+}
+function renderConsistency() {
+  const el = document.getElementById('consistencyWidget');
+  if (!el) return;
+  if (!(state.workoutHistory || []).length) { el.innerHTML = ''; return; } // erst zeigen, wenn es Trainings gibt
+  const c = consistencyData();
+  const lbls = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+  const done = c.thisCount >= c.goal;
+  el.innerHTML = `
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:baseline;">
+        <div style="font-size:14px;">🎯 Diese Woche: <b style="color:${done ? '#4caf50' : 'var(--text)'};">${c.thisCount}/${c.goal}</b> Einheiten${done ? ' ✓' : ''}</div>
+        <div class="mono" style="font-size:13px; color:${c.streak > 0 ? 'var(--accent)' : 'var(--text-faint)'};">🔥 ${c.streak} Wochen-Serie</div>
+      </div>
+      <div class="cons-week">
+        ${c.days.map((d, i) => `<div class="cons-day ${d.trained ? 'trained' : ''} ${d.isToday ? 'today' : ''}"><div class="cd-dot"></div><div class="cd-lbl">${lbls[i]}</div></div>`).join('')}
+      </div>
+    </div>`;
+}
+function applyTextScale() {
+  const sc = state.settings.textScale || 1;
+  document.body.style.zoom = sc === 1 ? '' : sc;
+}
+function updateTextScale() {
+  state.settings.textScale = parseFloat(document.getElementById('setTextScale').value) || 1;
+  saveState();
+  applyTextScale();
+  showToast("✓ Textgröße gespeichert");
+}
+function updateWeeklyGoal() {
+  const v = parseInt(document.getElementById('setWeeklyGoal').value);
+  state.settings.weeklyGoal = (v >= 1 && v <= 7) ? v : null;
+  saveState();
+  renderConsistency();
+  showToast("✓ Wochenziel gespeichert");
+}
+
 function renderToday() {
   applyCycleAutoSelect();
+  renderBackupReminder();
+  renderDeloadHint();
+  renderConsistency();
   // Date
   document.getElementById('todayDate').textContent =
     new Date().toLocaleDateString('de-DE', { weekday:'short', day:'2-digit', month:'short'}).toUpperCase();
@@ -2664,7 +2881,7 @@ function exHoldHtml(ex) {
   if (!exMetrics(ex).includes('time_s')) return '';
   return `<div class="hold-row">
           <input type="number" inputmode="numeric" id="holdSec-${ex.id}" class="hold-input" value="${holdSeconds(ex)}" min="5" max="600" step="5">
-          <span style="font-size:12px; color:var(--text-dim);">Sek</span>
+          <span style="font-size:13px; color:var(--text-dim);">Sek</span>
           <button class="btn btn-small" style="width:auto;" onclick="startHold('${ex.id}')">▶ Halten</button>
         </div>`;
 }
@@ -3215,7 +3432,7 @@ function renderWodCard(day) {
   card.innerHTML = `
     <div style="border:1px solid var(--accent); background:var(--accent-soft); border-radius:18px; padding:18px; margin-bottom:14px; text-align:center;">
       <div style="font-family:'Sora',sans-serif; font-weight:700; font-size:16px;">⏱ ${info.label}</div>
-      <div style="font-size:12px; color:var(--text-dim); margin-top:2px;">${info.hint}</div>
+      <div style="font-size:13px; color:var(--text-dim); margin-top:2px;">${info.hint}</div>
       <div id="wodClock" class="mono" style="font-size:46px; font-weight:700; color:var(--accent); letter-spacing:1px; margin:10px 0;">00:00</div>
       <div style="display:flex; gap:8px; justify-content:center;">
         <button class="btn btn-small" style="width:auto;" onclick="enterWodFocus()">▶ Start (Fokus)</button>
@@ -3346,6 +3563,8 @@ function openSettings() {
   document.getElementById('setVolume').value = Math.round(state.settings.volume * 100);
   document.getElementById('volLabel').textContent = Math.round(state.settings.volume * 100) + '%';
   document.getElementById('setCycling').checked = !!state.settings.cycling;
+  document.getElementById('setWeeklyGoal').value = state.settings.weeklyGoal || '';
+  document.getElementById('setTextScale').value = String(state.settings.textScale || 1);
   document.getElementById('setBump').value = state.settings.cyclingBump;
   document.getElementById('bumpLabel').textContent = state.settings.cyclingBump;
   renderCyclingInfo();
@@ -3617,12 +3836,12 @@ function renderSaveGroupList(todayN, checkedDefault=true) {
   todayN.forEach((it, i) => { (byMeal[it.meal] = byMeal[it.meal] || []).push({ it, i }); });
   el.innerHTML = Object.entries(byMeal).map(([meal, rows]) => `
     <div style="margin-bottom:10px;">
-      <div class="mono" style="font-size:10px; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">${meal}</div>
+      <div class="mono" style="font-size:11px; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">${meal}</div>
       ${rows.map(({it, i}) => `
         <label style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; margin-bottom:5px;">
           <input type="checkbox" class="grp-chk" value="${i}" ${checkedDefault?'checked':''} style="width:auto; transform:scale(1.3);">
-          <span style="flex:1; font-size:13px;">${it.name} <span style="color:var(--text-faint)">${fmtAmount(it)}</span></span>
-          <span class="mono" style="font-size:11px; color:var(--text-dim);">${Math.round(it.kcal)} kcal</span>
+          <span style="flex:1; font-size:14px;">${it.name} <span style="color:var(--text-faint)">${fmtAmount(it)}</span></span>
+          <span class="mono" style="font-size:12px; color:var(--text-dim);">${Math.round(it.kcal)} kcal</span>
         </label>
       `).join('')}
     </div>
@@ -3635,7 +3854,7 @@ function closeSaveGroupModal() {
   document.getElementById('saveGroupModal').classList.remove('active');
 }
 function confirmSaveGroup() {
-  const name = document.getElementById('saveGroupName').value.trim();
+  const name = sanitizeText(document.getElementById('saveGroupName').value.trim());
   if (!name) { showToast("Bitte einen Namen eingeben", true); return; }
   const todayN = state.nutrition[activeDate()] || [];
   const selectedIdx = [...document.querySelectorAll('#saveGroupList .grp-chk:checked')].map(c => parseInt(c.value));
@@ -4039,23 +4258,23 @@ function validateAndNormalizePlan(obj) {
       const metrics = Array.isArray(e.metrics) ? e.metrics.filter(m => METRICS[m]) : [];
       const norm = {
         id,
-        name: String(e.name).slice(0,80),
+        name: sanitizeText(e.name).slice(0,80),
         type,
         sets: Math.max(1, parseInt(e.sets) || 3),
         reps: String(e.reps || "8-12"),
         rpe: String(e.rpe || "8"),
         rest: Math.max(0, parseInt(e.rest) || (type === 'cardio' ? 60 : 120)),
-        cues: String(e.cues || ""),
-        alt: String(e.alt || "")
+        cues: sanitizeText(e.cues || ""),
+        alt: sanitizeText(e.alt || "")
       };
       if (metrics.length) norm.metrics = metrics;
-      if (e.target) norm.target = String(e.target).slice(0,80);
+      if (e.target) norm.target = sanitizeText(e.target).slice(0,80);
       if (e.group) norm.group = String(e.group).slice(0,4);
       return norm;
     });
     const day = {
       code: String(d.code || ('T' + (di+1))).slice(0,6),
-      name: String(d.name || ('Tag ' + (di+1))).slice(0,60),
+      name: sanitizeText(d.name || ('Tag ' + (di+1))).slice(0,60),
       weekday: d.weekday ? String(d.weekday).slice(0,4) : "",
       format: ['for_time','amrap','emom','rounds'].includes(d.format) ? d.format : 'standard',
       exercises
@@ -4064,7 +4283,7 @@ function validateAndNormalizePlan(obj) {
     const rd = parseInt(d.rounds);  if (rd > 0) day.rounds = Math.min(99, rd);
     return day;
   });
-  const plan = { id: planId, name: String(obj.name || "Importierter Plan").slice(0,60), days };
+  const plan = { id: planId, name: sanitizeText(obj.name || "Importierter Plan").slice(0,60), days };
   if (['follicular','luteal'].includes(obj.cyclePhase)) plan.cyclePhase = obj.cyclePhase;
   const meta = sanitizeMeta(obj.meta);
   if (meta) plan.meta = meta;
@@ -4150,13 +4369,13 @@ function sanitizeMealPlan(mp) {
   if (!Array.isArray(mp) || mp.length === 0) return null;
   const out = mp.slice(0, 7).map(d => {
     const meals = Array.isArray(d.meals) ? d.meals.slice(0, 8).map(m => ({
-      name: String(m.name || "Mahlzeit").slice(0, 40),
+      name: sanitizeText(m.name || "Mahlzeit").slice(0, 40),
       kcal: Math.max(0, Math.round(Number(m.kcal) || 0)),
-      items: Array.isArray(m.items) ? m.items.slice(0, 14).map(x => String(x).slice(0, 90)) : []
+      items: Array.isArray(m.items) ? m.items.slice(0, 14).map(x => sanitizeText(x).slice(0, 90)) : []
     })).filter(m => m.items.length > 0) : [];
     let kcal = Math.round(Number(d.kcal) || 0);
     if (!kcal) kcal = meals.reduce((s, m) => s + m.kcal, 0);
-    return { day: String(d.day || "Tag").slice(0, 40), kcal, meals };
+    return { day: sanitizeText(d.day || "Tag").slice(0, 40), kcal, meals };
   }).filter(d => d.meals.length > 0);
   return out.length ? out : null;
 }
@@ -4445,19 +4664,19 @@ function renderNutrition() {
       return `
         <div style="margin-bottom: 12px;">
           <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-            <div class="mono" style="font-size:11px; color: var(--text-dim); text-transform:uppercase;">${meal}</div>
-            <div class="mono" style="font-size:11px; color: var(--accent);">${Math.round(mKcal)} kcal</div>
+            <div class="mono" style="font-size:12px; color: var(--text-dim); text-transform:uppercase;">${meal}</div>
+            <div class="mono" style="font-size:12px; color: var(--accent);">${Math.round(mKcal)} kcal</div>
           </div>
           ${items.map(it => `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:13px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:14px;">
               <div style="display:flex; align-items:center; gap:8px; min-width:0;">
                 ${it.image ? `<img class="food-thumb" style="width:30px;height:30px;" src="${it.image}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
                 <div>${it.name} <span style="color:var(--text-faint)">${fmtAmount(it)}</span></div>
               </div>
               <div style="display:flex; gap:6px; align-items:center;">
-                <span class="mono" style="font-size:11px; color: var(--text-dim);">${Math.round(it.kcal)}</span>
-                <button class="btn-small btn-ghost" style="padding:4px 8px; font-family:sans-serif; font-size:13px;" onclick="editFood(${it.idx})">✎</button>
-                <button class="btn-small btn-ghost" style="padding:4px 8px; font-family:sans-serif; font-size:13px;" onclick="removeFood(${it.idx})">×</button>
+                <span class="mono" style="font-size:12px; color: var(--text-dim);">${Math.round(it.kcal)}</span>
+                <button class="btn-small btn-ghost" style="padding:4px 8px; font-family:sans-serif; font-size:14px;" onclick="editFood(${it.idx})">✎</button>
+                <button class="btn-small btn-ghost" style="padding:4px 8px; font-family:sans-serif; font-size:14px;" onclick="removeFood(${it.idx})">×</button>
               </div>
             </div>
           `).join('')}
@@ -4479,14 +4698,14 @@ function renderNutrition() {
   } else {
     planList.innerHTML = `
     ${custom ? `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <span class="mono" style="font-size:11px; color:var(--accent);">★ Eigener Plan (importiert)</span>
+      <span class="mono" style="font-size:12px; color:var(--accent);">★ Eigener Plan (importiert)</span>
       <button class="btn-small btn-ghost" style="width:auto;" onclick="resetMealPlan()">Zurücksetzen</button>
     </div>` : ''}
     <div class="meal-day-grid">
       ${MP.map((d,i) => `<div class="day-tab${i===state.selectedMealDay?' active':''}" onclick="selectMealDay(${i})">${i+1}</div>`).join('')}
     </div>
     <div style="font-family:'Sora'; font-weight:700; font-size:18px; margin-bottom:4px;">${day.day}</div>
-    <div class="mono" style="font-size:11px; color: var(--accent); margin-bottom:14px;">~${day.kcal} kcal</div>
+    <div class="mono" style="font-size:12px; color: var(--accent); margin-bottom:14px;">~${day.kcal} kcal</div>
     ${day.meals.map(m => `
       <div class="meal">
         <div class="meal-header">
@@ -4866,7 +5085,7 @@ function closeFoodCorrect() {
 function confirmFoodCorrect() {
   const ctx = fcContext;
   if (!ctx) return;
-  const name = document.getElementById('fcName').value.trim();
+  const name = sanitizeText(document.getElementById('fcName').value.trim());
   if (!name) { showToast("Bitte einen Namen eingeben", true); return; }
   const kcal = Math.round(parseFloat(document.getElementById('fcKcal').value) || 0);
   const p = +(parseFloat(document.getElementById('fcP').value) || 0);
@@ -5078,7 +5297,7 @@ function offProductToFood(p, code) {
   if (!serving || serving <= 0 || serving > 2000) serving = null;
   const image = p.image_small_url || p.image_front_small_url || p.image_url || p.image_front_url || null;
   const food = {
-    name: (name || '').slice(0, 60),
+    name: sanitizeText(name).slice(0, 60),
     kcal: kcal != null ? Math.round(kcal) : 0,
     p: +pp.toFixed(1), f: +ff.toFixed(1), c: +cc.toFixed(1),
     barcode: code || null
@@ -5155,7 +5374,7 @@ function renderMetricHistory(metric) {
     const delta = prev ? val - prev.val : null;
     // farbenblind-sicher: Pfeil + Vorzeichen, Farbe nur unterstützend (Blau/Grün, kein Rot/Grün-Paar)
     const deltaStr = delta !== null
-      ? `<span style="color:${delta > 0.05 ? 'var(--success)' : delta < -0.05 ? 'var(--accent)' : 'var(--text-dim)'}; font-size:11px; margin-left:8px;">${delta>=0?'↑ +':'↓ '}${delta.toFixed(1)}</span>`
+      ? `<span style="color:${delta > 0.05 ? 'var(--success)' : delta < -0.05 ? 'var(--accent)' : 'var(--text-dim)'}; font-size:12px; margin-left:8px;">${delta>=0?'↑ +':'↓ '}${delta.toFixed(1)}</span>`
       : '';
     return `
       <div class="history-item">
@@ -5370,7 +5589,7 @@ function openDayDetail(ds) {
       ${exHtml}
       ${wod}
       ${vol > 0 ? `<div class="hist-ex" style="color:var(--accent);">Volumen: ${Math.round(vol)} kg</div>` : ''}
-      <div style="font-size:11px;color:var(--text-faint);margin-top:10px;">Gefühl / Bewertung (1 = schwer, 5 = top)</div>
+      <div style="font-size:12px;color:var(--text-faint);margin-top:10px;">Gefühl / Bewertung (1 = schwer, 5 = top)</div>
       <div class="rating-row">${ratingBtns}</div>
       <textarea id="sessNote-${idx}" placeholder="Notiz zu diesem Training…" oninput="setSessionNote(${idx}, this.value)" style="width:100%;min-height:54px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-family:inherit;box-sizing:border-box;">${escHtml(w.sessionNote)}</textarea>
     </div>`;
@@ -5468,9 +5687,9 @@ function renderProgress() {
       <div class="history-item">
         <div>
           <div style="font-size:14px;">${p.name}</div>
-          <div class="mono" style="font-size:11px; color: var(--text-dim);">${p.w}kg × ${p.r} · ${fmtDate(p.date)}</div>
+          <div class="mono" style="font-size:12px; color: var(--text-dim);">${p.w}kg × ${p.r} · ${fmtDate(p.date)}</div>
         </div>
-        <div class="history-value">${p.e1rm} kg<span style="font-size:10px; color: var(--text-dim);"> 1RM</span></div>
+        <div class="history-value">${p.e1rm} kg<span style="font-size:11px; color: var(--text-dim);"> 1RM</span></div>
       </div>
     `).join('');
   }
@@ -5555,11 +5774,11 @@ function renderCardioStats() {
   const fmtKm = v => v >= 10 ? v.toFixed(0) : v.toFixed(1);
   document.getElementById('cardioSummary').innerHTML = `
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; text-align:center;">
-      <div><div class="mono" style="font-size:22px; font-weight:700;">${Math.round(totTime)}</div><div style="font-size:11px; color:var(--text-dim);">Min gesamt</div></div>
-      <div><div class="mono" style="font-size:22px; font-weight:700;">${fmtKm(totKm)}</div><div style="font-size:11px; color:var(--text-dim);">km gesamt</div></div>
-      <div><div class="mono" style="font-size:22px; font-weight:700;">${sessions}</div><div style="font-size:11px; color:var(--text-dim);">Einheiten</div></div>
+      <div><div class="mono" style="font-size:22px; font-weight:700;">${Math.round(totTime)}</div><div style="font-size:12px; color:var(--text-dim);">Min gesamt</div></div>
+      <div><div class="mono" style="font-size:22px; font-weight:700;">${fmtKm(totKm)}</div><div style="font-size:12px; color:var(--text-dim);">km gesamt</div></div>
+      <div><div class="mono" style="font-size:22px; font-weight:700;">${sessions}</div><div style="font-size:12px; color:var(--text-dim);">Einheiten</div></div>
     </div>
-    <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:12px; color:var(--text-dim); text-align:center;">
+    <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:13px; color:var(--text-dim); text-align:center;">
       Diese Woche: <b style="color:var(--text);">${Math.round(wkTime)} Min</b> · <b style="color:var(--text);">${fmtKm(wkKm)} km</b>
     </div>`;
 }
@@ -5629,8 +5848,8 @@ function renderWodBenchmarks() {
     const last = arr[0];
     return `<div class="history-item">
       <div>
-        <div style="font-size:14px;">${k} <span style="font-size:10px; color:var(--text-faint);">${fmtLabel[best.format] || best.format}</span></div>
-        <div class="mono" style="font-size:11px; color:var(--text-dim);">${arr.length}× · zuletzt ${fmtWodResult(last.result)} (${fmtDate(last.date)})</div>
+        <div style="font-size:14px;">${k} <span style="font-size:11px; color:var(--text-faint);">${fmtLabel[best.format] || best.format}</span></div>
+        <div class="mono" style="font-size:12px; color:var(--text-dim);">${arr.length}× · zuletzt ${fmtWodResult(last.result)} (${fmtDate(last.date)})</div>
       </div>
       <div class="history-value">${fmtWodResult(best.result)}</div>
     </div>`;
@@ -5668,6 +5887,9 @@ function exportData() {
   a.download = `ironlog-backup-${todayStr()}.json`;
   a.click();
   URL.revokeObjectURL(url);
+  state.lastExport = Date.now();
+  saveState();
+  renderBackupReminder();
   showToast("✓ Export erstellt");
 }
 
@@ -5750,6 +5972,7 @@ window.addEventListener('beforeinstallprompt', e => {
    INIT
    ================================================================= */
 loadState();
+applyTextScale();
 renderToday();
 updateOnboarding();
 setupNutSwipe();
