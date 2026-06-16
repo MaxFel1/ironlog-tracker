@@ -336,6 +336,7 @@ main { padding: 20px; }
 .cons-day.trained .cd-dot { background: var(--accent); }
 .cons-day.today .cd-dot { outline: 1.5px solid var(--accent); outline-offset: 1.5px; }
 .cons-day .cd-lbl { font-size: 11px; color: var(--text-faint); margin-top: 4px; text-transform: uppercase; }
+.cal-day.incomplete { box-shadow: inset 0 0 0 1.5px #e0b84f; }
 
 .cues {
   font-size: 14px;
@@ -2830,8 +2831,22 @@ function exTargetLine(ex) {
 }
 
 function exSetsState(ex, plan) {
-  const lastWorkout = [...state.workoutHistory].reverse().find(w => w.dayCode === plan.code);
-  const lastEx = lastWorkout?.exercises.find(e => e.id === ex.id);
+  // Referenz pro Übung: jüngstes Workout suchen, das DIESE Übung tatsächlich enthält
+  // (sonst „verdecken" Teil-Workouts die Referenz aus früheren vollständigen Sessions).
+  // Primär per id, als Fallback per Name (falls ein Plan neu importiert wurde → neue ids).
+  let lastEx = null;
+  for (let i = state.workoutHistory.length - 1; i >= 0; i--) {
+    const w = state.workoutHistory[i];
+    const cand = (w.exercises || []).find(e => e.id === ex.id);
+    if (cand && cand.sets && cand.sets.length) { lastEx = cand; break; }
+  }
+  if (!lastEx) {
+    for (let i = state.workoutHistory.length - 1; i >= 0; i--) {
+      const w = state.workoutHistory[i];
+      const cand = (w.exercises || []).find(e => e.name && ex.name && e.name === ex.name);
+      if (cand && cand.sets && cand.sets.length) { lastEx = cand; break; }
+    }
+  }
   const activeEx = state.activeWorkout?.exercises.find(e => e.id === ex.id);
   const sets = activeEx?.sets || Array.from({length: ex.sets}, () => emptySet(ex));
   return { lastEx, sets };
@@ -3495,6 +3510,30 @@ function saveNote() {
 }
 
 /* ----- TRAINING ABBRECHEN ----- */
+function resumeWorkout(idx) {
+  const w = state.workoutHistory[idx];
+  if (!w || !w.resume) return;
+  if (state.activeWorkout) {
+    showToast("Es läuft bereits ein Training – erst abschließen oder abbrechen.", true);
+    return;
+  }
+  const r = w.resume;
+  state.activeWorkout = {
+    planId: r.planId, dayIdx: r.dayIdx, dayCode: r.dayCode, dayName: r.dayName,
+    started: Date.now(),
+    exercises: (r.exercises || []).map(ex => ({
+      id: ex.id, name: ex.name, keys: ex.keys,
+      sets: (ex.sets || []).map(s => ({ ...s }))
+    }))
+  };
+  state.currentDayIdx = r.dayIdx;
+  state.workoutHistory.splice(idx, 1); // alten Teil-Eintrag entfernen (Abschluss erzeugt neuen)
+  saveState();
+  closeDayDetail();
+  navigateTo('training');
+  showToast("Training wiederaufgenommen");
+}
+
 function abortWorkout() {
   if (!state.activeWorkout) return;
   if (!confirm("Training abbrechen? Alle Eingaben dieser Einheit gehen verloren.")) return;
@@ -3541,6 +3580,21 @@ document.getElementById('finishWorkoutBtn').onclick = () => {
   const hasWod = wodResult && (wodResult.timeSec || wodResult.rounds || wodResult.reps || wodResult.completed);
   if (completed.exercises.length === 0 && !hasWod) {
     if (!confirm("Keine Sätze abgehakt. Trotzdem speichern?")) return;
+  }
+  // Unvollständigkeit erkennen (nur Standard-Tage) + vollständigen Snapshot zum Fortsetzen sichern
+  if (fmt === 'standard') {
+    let totalSets = 0, doneSets = 0;
+    aw.exercises.forEach(ex => (ex.sets || []).forEach(s => { totalSets++; if (s.done) doneSets++; }));
+    if (totalSets > 0 && doneSets < totalSets) {
+      completed.incomplete = true;
+      completed.resume = {
+        planId: aw.planId, dayIdx: aw.dayIdx, dayCode: aw.dayCode, dayName: aw.dayName,
+        exercises: aw.exercises.map(ex => ({
+          id: ex.id, name: ex.name, keys: ex.keys,
+          sets: (ex.sets || []).map(s => ({ ...s }))
+        }))
+      };
+    }
   }
   state.workoutHistory.push(completed);
   state.activeWorkout = null;
@@ -5559,12 +5613,14 @@ function renderWorkoutCalendar() {
     const has = !!sessions;
     const isToday = ds === todayStrLocal;
     let dot = '';
+    let incompleteCls = '';
     if (has) {
       const rated = sessions.map(s => s.w.rating).filter(r => r);
       const color = rated.length ? ratingColor(Math.max(...rated)) : 'var(--accent)';
       dot = `<span class="cal-dot" style="background:${color}"></span>`;
+      if (sessions.some(s => s.w.incomplete)) incompleteCls = ' incomplete';
     }
-    html += `<div class="cal-day ${has ? 'has' : ''} ${isToday ? 'today' : ''}" ${has ? `onclick="openDayDetail('${ds}')"` : ''}><span>${d}</span>${dot}</div>`;
+    html += `<div class="cal-day ${has ? 'has' : ''}${incompleteCls} ${isToday ? 'today' : ''}" ${has ? `onclick="openDayDetail('${ds}')"` : ''}><span>${d}</span>${dot}</div>`;
   }
   cont.innerHTML = html;
 }
@@ -5585,11 +5641,14 @@ function openDayDetail(ds) {
     const wod = w.result ? `<div class="hist-ex">🏁 Ergebnis: <span class="hist-sets">${fmtWodResult(w.result)}</span></div>` : '';
     const r = w.rating || 0;
     const ratingBtns = [1,2,3,4,5].map(n => `<button class="rating-btn ${r === n ? 'active' : ''}" onclick="setSessionRating(${idx},${n})">${n}</button>`).join('');
+    const incTag = w.incomplete ? `<span style="color:#e0b84f;font-size:12px;font-weight:400;"> · ⚠ unvollständig</span>` : '';
+    const resumeBtn = (w.incomplete && w.resume) ? `<button class="btn-small" style="width:100%;margin-top:10px;" onclick="resumeWorkout(${idx})">▶ Training fortsetzen &amp; abschließen</button>` : '';
     return `<div class="hist-session">
-      <div style="font-family:'Sora';font-weight:700;margin-bottom:6px;">${w.dayName || 'Training'}${w.format && w.format !== 'standard' ? ` · ${w.format.toUpperCase()}` : ''}</div>
+      <div style="font-family:'Sora';font-weight:700;margin-bottom:6px;">${w.dayName || 'Training'}${w.format && w.format !== 'standard' ? ` · ${w.format.toUpperCase()}` : ''}${incTag}</div>
       ${exHtml}
       ${wod}
       ${vol > 0 ? `<div class="hist-ex" style="color:var(--accent);">Volumen: ${Math.round(vol)} kg</div>` : ''}
+      ${resumeBtn}
       <div style="font-size:12px;color:var(--text-faint);margin-top:10px;">Gefühl / Bewertung (1 = schwer, 5 = top)</div>
       <div class="rating-row">${ratingBtns}</div>
       <textarea id="sessNote-${idx}" placeholder="Notiz zu diesem Training…" oninput="setSessionNote(${idx}, this.value)" style="width:100%;min-height:54px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-family:inherit;box-sizing:border-box;">${escHtml(w.sessionNote)}</textarea>
