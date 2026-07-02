@@ -997,6 +997,16 @@ svg.ic{width:1.12em;height:1.12em;vertical-align:-0.16em;flex-shrink:0;}
 @media (prefers-reduced-motion: reduce){
   *, *::before, *::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
 }
+
+/* Auto-Progressions-Hinweis */
+.prog-hint { background: rgba(242,151,46,0.10); border: 1px solid rgba(242,151,46,0.35); border-radius: 10px; padding: 9px 12px; margin: 8px 0 10px; font-size: 13.5px; color: var(--text); }
+.prog-hint b { color: var(--accent); }
+
+/* Undo-Toast + Touch-Ziele */
+.toast.undo { pointer-events: auto; display: flex; align-items: center; gap: 12px; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); }
+.undo-btn { background: transparent; border: none; color: var(--accent); font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 14px; padding: 8px 10px; cursor: pointer; }
+.timer-btn { min-height: 44px; }
+.btn-small { min-height: 40px; }
 </style>
 </head>
 
@@ -1208,6 +1218,8 @@ svg.ic{width:1.12em;height:1.12em;vertical-align:-0.16em;flex-shrink:0;}
   <h1 class="view-title">PROGRESS</h1>
   <p class="view-subtitle">Kraft- & Volumen-Entwicklung</p>
 
+  <div id="weeklyReport"></div>
+
   <div class="card">
     <div class="card-header">
       <div class="card-title">Trainingskalender</div>
@@ -1294,6 +1306,8 @@ svg.ic{width:1.12em;height:1.12em;vertical-align:-0.16em;flex-shrink:0;}
       <div class="card-title">Daten</div>
     </div>
     <button class="btn btn-secondary" onclick="exportData()"><svg class="ic"><use href="#ic-download"/></svg> Export (JSON)</button>
+    <div style="height:8px"></div>
+    <button class="btn btn-secondary" onclick="exportCsv()"><svg class="ic"><use href="#ic-download"/></svg> Training als CSV (Excel)</button>
     <div style="height:8px"></div>
     <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()"><svg class="ic"><use href="#ic-upload"/></svg> Import (JSON)</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
@@ -1476,6 +1490,10 @@ svg.ic{width:1.12em;height:1.12em;vertical-align:-0.16em;flex-shrink:0;}
       </div>
     </div>
     <div class="input-group">
+      <label>kcal direkt (optional – überschreibt die Makro-Berechnung, z.B. Restaurant-Schätzung)</label>
+      <input type="number" id="manKcalDirect" inputmode="numeric" placeholder="leer = aus Makros berechnet" oninput="updateManualPreview()">
+    </div>
+    <div class="input-group">
       <label>Mahlzeit</label>
       <select id="manMeal">
         <option value="Frühstück">Frühstück</option>
@@ -1529,6 +1547,29 @@ svg.ic{width:1.12em;height:1.12em;vertical-align:-0.16em;flex-shrink:0;}
     <button class="btn" onclick="saveNote()">✓ Speichern</button>
     <div style="height:8px"></div>
     <button class="btn btn-secondary" onclick="closeNotesModal()">Abbrechen</button>
+  </div>
+</div>
+
+<!-- SCHEIBEN- & AUFWÄRMRECHNER -->
+<div class="modal-bg" id="plateModal">
+  <div class="modal">
+    <div class="modal-title">Scheibenrechner</div>
+    <div class="input-group">
+      <label>Zielgewicht (kg)</label>
+      <input type="number" id="plateTarget" inputmode="decimal" step="0.5" min="0" oninput="renderPlateCalc()">
+    </div>
+    <div class="input-group">
+      <label>Stange</label>
+      <select id="plateBar" onchange="renderPlateCalc()">
+        <option value="20">Langhantel 20 kg</option>
+        <option value="15">Frauen-/Technikstange 15 kg</option>
+        <option value="10">Curl-/Kurzstange 10 kg</option>
+        <option value="0">Ohne Stange (Maschine/KH)</option>
+      </select>
+    </div>
+    <div id="plateResult" style="margin:6px 0 12px;"></div>
+    <div id="warmupResult" style="margin-bottom:12px;"></div>
+    <button class="btn btn-secondary" onclick="closePlateCalc()">Schließen</button>
   </div>
 </div>
 
@@ -1604,6 +1645,14 @@ svg.ic{width:1.12em;height:1.12em;vertical-align:-0.16em;flex-shrink:0;}
     <div class="input-group">
       <label>Einheiten pro Woche (leer = automatisch aus aktivem Plan)</label>
       <input type="number" id="setWeeklyGoal" min="1" max="7" inputmode="numeric" placeholder="auto" onchange="updateWeeklyGoal()">
+    </div>
+
+    <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
+    <div style="font-family:'Sora'; font-size:18px; letter-spacing:0.04em; margin-bottom:10px; color:var(--accent);">Training</div>
+    <div class="input-group">
+      <label>Tastatur im Training automatisch ausblenden nach (Sekunden, 0 = aus)</label>
+      <input type="number" id="setKbHide" min="0" max="60" step="1" inputmode="numeric" onchange="updateKbAutoHide()">
+      <div style="font-size:12.5px; color:var(--text-faint); margin-top:6px;">Blendet die Tastatur aus, wenn du so lange nichts eintippst – damit der Pausen-Timer sichtbar bleibt.</div>
     </div>
 
     <div style="border-top:1px solid var(--border); margin:18px 0;"></div>
@@ -2392,6 +2441,10 @@ function migrateSupersets() {
 }
 
 function normalizeState() {
+  // Kernfelder defensiv absichern (schützt vor beschädigten Backups, z.B. "nutrition": null)
+  if (!state.nutrition || typeof state.nutrition !== 'object' || Array.isArray(state.nutrition)) state.nutrition = {};
+  if (!Array.isArray(state.weights)) state.weights = [];
+  if (!Array.isArray(state.workoutHistory)) state.workoutHistory = [];
   if (!state.notes || typeof state.notes !== 'object') state.notes = {};
   if (!Array.isArray(state.customFoods)) state.customFoods = [];
   if (!Array.isArray(state.mealGroups)) state.mealGroups = [];
@@ -2407,6 +2460,7 @@ function normalizeState() {
   if (typeof state.settings.cycleTraining !== 'boolean') state.settings.cycleTraining = false;
   if (state.settings.weeklyGoal === undefined) state.settings.weeklyGoal = null;
   if (typeof state.settings.textScale !== 'number') state.settings.textScale = 1;
+  if (typeof state.settings.kbAutoHideSec !== 'number') state.settings.kbAutoHideSec = 5;
   if (!state.cycle || typeof state.cycle !== 'object') state.cycle = { lastPeriodStart: null, cycleLength: 28, autoDate: null };
   if (typeof state.cycle.cycleLength !== 'number') state.cycle.cycleLength = 28;
 
@@ -2536,6 +2590,28 @@ function showToast(msg, isError=false) {
   t.classList.toggle('error', isError);
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+/* ----- Undo-Toast (5 s Rückgängig-Fenster für Löschaktionen) ----- */
+let undoFn = null, undoTimer = null;
+function showUndoToast(msg, fn) {
+  clearTimeout(undoTimer);
+  const old = document.getElementById('undoToast');
+  if (old) old.remove();
+  undoFn = fn;
+  const t = document.createElement('div');
+  t.id = 'undoToast';
+  t.className = 'toast show undo';
+  t.innerHTML = `<span>${msg}</span><button class="undo-btn" onclick="applyUndo()">Rückgängig</button>`;
+  document.body.appendChild(t);
+  undoTimer = setTimeout(() => { t.remove(); undoFn = null; }, 5000);
+}
+function applyUndo() {
+  clearTimeout(undoTimer);
+  const f = undoFn; undoFn = null;
+  const t = document.getElementById('undoToast');
+  if (t) t.remove();
+  if (f) f();
 }
 // Epley 1RM
 function estimate1RM(weight, reps) {
@@ -2776,9 +2852,9 @@ function renderToday() {
   const tgtToday = targetsForDate(todayStr());
   document.getElementById('statKcal').innerHTML =
     `${Math.round(kcal)}<span class="stat-unit">/ ${tgtToday.kcal}</span>`;
-  const dtLabel = tgtToday.dayType === 'training' ? ' · Trainingstag'
-                : tgtToday.dayType === 'rest' ? ' · Ruhetag' : '';
-  document.getElementById('statKcalDelta').textContent =
+  const dtLabel = tgtToday.dayType === 'training' ? ' · <svg class="ic"><use href="#ic-muscle"/></svg> Trainingstag'
+                : tgtToday.dayType === 'rest' ? ' · <svg class="ic"><use href="#ic-rest"/></svg> Ruhetag' : '';
+  document.getElementById('statKcalDelta').innerHTML =
     `${Math.round(prot)}g Protein · ${todayN.length} Items${dtLabel}`;
 
   // Day tabs (datengetrieben aus aktivem Plan)
@@ -2950,9 +3026,32 @@ function startHold(exId) {
 function ytSearchUrl(name) {
   return 'https://www.youtube.com/results?search_query=' + encodeURIComponent((name || '') + ' Technik Ausführung');
 }
+/* ----- Auto-Progressions-Hinweis -----
+   Zeigt "+2,5 kg versuchen", wenn die letzte Einheit dieser Übung alle geplanten
+   Sätze am oberen Ende des Wdh-Ziels mit gleichem Gewicht geschafft hat.
+   Bewusst nur ein Hinweis – geändert wird nichts automatisch. */
+function exProgressionHint(ex, lastEx) {
+  if (!exMetrics(ex).includes('weight') || !exMetrics(ex).includes('reps')) return '';
+  if (!lastEx || !Array.isArray(lastEx.sets) || !lastEx.sets.length) return '';
+  const m = String(ex.reps || '').match(/(\d+)\s*[-–]\s*(\d+)|^(\d+)$/);
+  if (!m) return '';
+  const topReps = parseInt(m[2] || m[3] || m[1], 10);
+  if (!topReps) return '';
+  const sets = lastEx.sets.filter(s => s.w != null && s.r != null);
+  if (sets.length < (ex.sets || 1)) return '';
+  const w0 = sets[0].w;
+  if (!w0 || !sets.every(s => s.w === w0 && s.r >= topReps)) return '';
+  const next = +(w0 + 2.5).toFixed(1);
+  return `<div class="prog-hint"><svg class="ic"><use href="#ic-trophy"/></svg> Letzte Einheit ${sets.length}×${topReps}+ @ ${w0} kg voll geschafft – heute <b>${next} kg</b> versuchen</div>`;
+}
+
 function exActionsHtml(ex, note) {
+  const plateBtn = exMetrics(ex).includes('weight')
+    ? `<button class="btn-small btn-ghost" onclick="openPlateCalc('${ex.id}')"><svg class="ic"><use href="#ic-target"/></svg> Scheiben</button>`
+    : '';
   return `<div class="exercise-actions">
           <button class="btn-small btn-ghost" onclick="openNotesModal('${ex.id}')"><svg class="ic"><use href="#ic-note"/></svg> ${note ? 'Notiz bearbeiten' : 'Notiz hinzufügen'}</button>
+          ${plateBtn}
           <a class="btn-small btn-ghost" href="${ytSearchUrl(ex.name)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none; display:inline-flex; align-items:center; gap:5px;"><span style="color:#ff3b30;"><svg class="ic"><use href="#ic-play"/></svg></span> Technik</a>
           <span class="alt-text">Alt: ${ex.alt}</span>
         </div>`;
@@ -3120,6 +3219,7 @@ function renderTraining() {
       </div>
       <div class="exercise-body">
         ${exCuesNoteHtml(ex, note)}
+        ${isStandardDay(plan) ? exProgressionHint(ex, lastEx) : ''}
         ${exSetTableHtml(ex, sets, lastEx)}
         ${exHoldHtml(ex)}
         ${exActionsHtml(ex, note)}
@@ -3147,6 +3247,7 @@ function renderTraining() {
             <div class="exercise-status ${mAll ? 'done' : ''}" id="exStatus-${ex.id}">${mAll ? '✓' : `${mDone}/${ex.sets}`}</div>
           </div>
           ${exCuesNoteHtml(ex, note)}
+          ${isStandardDay(plan) ? exProgressionHint(ex, lastEx) : ''}
           ${exSetTableHtml(ex, sets, lastEx)}
           ${exHoldHtml(ex)}
           ${exActionsHtml(ex, note)}
@@ -3651,6 +3752,56 @@ function captureWodResult(day) {
 
 /* ----- NOTIZEN ----- */
 let pendingNoteExId = null;
+/* ----- Scheiben- & Aufwärmrechner ----- */
+const PLATES = [25, 20, 15, 10, 5, 2.5, 1.25]; // kg, Standard-Studio-Satz
+function calcPlates(target, bar) {
+  if (target <= bar) return { perSide: [], achieved: bar, rest: 0 };
+  let side = (target - bar) / 2, used = [], sum = 0;
+  for (const p of PLATES) {
+    while (side - (sum + p) > -0.001 && sum + p <= side + 0.001) { used.push(p); sum += p; }
+  }
+  return { perSide: used, achieved: bar + sum * 2, rest: +(target - (bar + sum * 2)).toFixed(2) };
+}
+function openPlateCalc(exId) {
+  // Vorbefüllung: eingetragenes Gewicht des ersten Satzes, sonst letzter Wert aus der Historie
+  let pre = '';
+  const aw = state.activeWorkout;
+  const ex = aw && aw.exercises.find(e => e.id === exId);
+  if (ex) { const s0 = (ex.sets || []).find(s => s.w !== '' && s.w != null); if (s0) pre = s0.w; }
+  if (pre === '' && ex) {
+    const day = getDay(aw.dayIdx);
+    const { lastEx } = exSetsState(day.exercises.find(e => e.id === exId) || { id: exId }, day);
+    if (lastEx && lastEx.sets && lastEx.sets.length) pre = lastEx.sets[0].w ?? '';
+  }
+  document.getElementById('plateTarget').value = pre;
+  document.getElementById('plateModal').classList.add('open');
+  renderPlateCalc();
+}
+function closePlateCalc() { document.getElementById('plateModal').classList.remove('open'); }
+function renderPlateCalc() {
+  const t = parseFloat(document.getElementById('plateTarget').value) || 0;
+  const bar = parseFloat(document.getElementById('plateBar').value) || 0;
+  const res = document.getElementById('plateResult');
+  const wu = document.getElementById('warmupResult');
+  if (t <= 0) { res.innerHTML = ''; wu.innerHTML = ''; return; }
+  const c = calcPlates(t, bar);
+  const chips = c.perSide.length
+    ? c.perSide.map(p => `<span style="display:inline-block; background:var(--bg-inset); border:1px solid var(--border); border-radius:8px; padding:4px 9px; margin:2px; font-family:'JetBrains Mono'; font-size:14px;">${p}</span>`).join('')
+    : '<span style="color:var(--text-dim);">keine Scheiben nötig</span>';
+  res.innerHTML =
+    `<div style="font-size:13px; color:var(--text-dim); margin-bottom:5px;">Pro Seite:</div>${chips}`
+    + (Math.abs(c.rest) > 0.01
+       ? `<div style="font-size:13px; color:var(--warning, #e8b34b); margin-top:7px;"><svg class="ic"><use href="#ic-warning"/></svg> ${t} kg nicht exakt stapelbar – nächstmöglich: <b>${c.achieved} kg</b></div>`
+       : `<div style="font-size:13px; color:var(--success); margin-top:7px;">= ${c.achieved} kg gesamt</div>`);
+  // Aufwärmrampe (klassisch 40/60/80 % des Arbeitsgewichts, auf 2,5 kg gerundet, min. Stange)
+  const rnd = v => Math.max(bar, Math.round(v / 2.5) * 2.5);
+  wu.innerHTML =
+    `<div style="font-size:13px; color:var(--text-dim); margin-bottom:5px;">Aufwärm-Vorschlag:</div>
+     <div style="font-family:'JetBrains Mono'; font-size:14px; line-height:1.9;">
+       ${rnd(t*0.4)} kg × 10 &nbsp;·&nbsp; ${rnd(t*0.6)} kg × 5 &nbsp;·&nbsp; ${rnd(t*0.8)} kg × 3
+     </div>`;
+}
+
 function openNotesModal(exId) {
   pendingNoteExId = exId;
   document.getElementById('noteTitle').textContent = getExerciseName(exId, 'Notiz');
@@ -3784,6 +3935,7 @@ function openSettings() {
   document.getElementById('volLabel').textContent = Math.round(state.settings.volume * 100) + '%';
   document.getElementById('setCycling').checked = !!state.settings.cycling;
   document.getElementById('setWeeklyGoal').value = state.settings.weeklyGoal || '';
+  document.getElementById('setKbHide').value = state.settings.kbAutoHideSec;
   document.getElementById('setTextScale').value = String(state.settings.textScale || 1);
   document.getElementById('setBump').value = state.settings.cyclingBump;
   document.getElementById('bumpLabel').textContent = state.settings.cyclingBump;
@@ -3845,8 +3997,36 @@ function renderCyclingInfo() {
     `Trainingstage: <b style="color:var(--text)">${[...days].sort().map(d=>names[d]).join(', ')}</b><br>`
     + `<svg class="ic"><use href="#ic-muscle"/></svg> Trainingstag: <b style="color:var(--accent)">${trainExample.kcal} kcal</b> · ${trainExample.protein}P / ${trainExample.fat}F / ${trainExample.carbs}C<br>`
     + `<svg class="ic"><use href="#ic-rest"/></svg> Ruhetag: <b style="color:var(--accent)">${restExample.kcal} kcal</b> · ${restExample.protein}P / ${restExample.fat}F / ${restExample.carbs}C<br>`
-    + `<span style="color:var(--text-faint)">Wochenschnitt bleibt bei ${state.targets.kcal} kcal. Protein & Fett konstant, Differenz über Kohlenhydrate.</span>`;
+    + `<span style="color:var(--text-faint)">Der Aufschlag an ${days.size} Trainingstagen wird automatisch von den ${7-days.size} Ruhetagen abgezogen – der Wochenschnitt bleibt bei ${state.targets.kcal} kcal. Protein & Fett konstant, Differenz über Kohlenhydrate.</span>`;
 }
+/* ----- Tastatur im Training automatisch ausblenden -----
+   Blur auf dem fokussierten Eingabefeld schließt die mobile Tastatur, damit
+   der Pausen-Timer sichtbar wird. Nur bei aktivem Training im Trainings-Tab;
+   jeder Tastendruck startet die Frist neu. 0 = deaktiviert. */
+let kbHideTimer = null;
+function kbInTrainingInput() {
+  const ae = document.activeElement;
+  return !!(ae && ae.tagName === 'INPUT' && ae.closest && ae.closest('#view-training'));
+}
+function armKbAutoHide() {
+  clearTimeout(kbHideTimer);
+  const sec = state.settings.kbAutoHideSec;
+  if (!sec || sec <= 0 || !state.activeWorkout || !kbInTrainingInput()) return;
+  kbHideTimer = setTimeout(() => {
+    if (kbInTrainingInput()) document.activeElement.blur();
+  }, sec * 1000);
+}
+document.addEventListener('focusin', armKbAutoHide);
+document.addEventListener('input', armKbAutoHide);
+document.addEventListener('focusout', () => clearTimeout(kbHideTimer));
+
+function updateKbAutoHide() {
+  const v = parseInt(document.getElementById('setKbHide').value, 10);
+  state.settings.kbAutoHideSec = (isNaN(v) || v < 0) ? 0 : Math.min(60, v);
+  document.getElementById('setKbHide').value = state.settings.kbAutoHideSec;
+  saveState();
+}
+
 function updateSettings() {
   state.settings.soundEnabled = document.getElementById('setSound').checked;
   state.settings.volume = document.getElementById('setVolume').value / 100;
@@ -4965,11 +5145,20 @@ function selectMealDay(i) {
 
 function removeFood(idx) {
   const today = activeDate();
+  const removed = state.nutrition[today] && state.nutrition[today][idx];
+  if (!removed) return;
   state.nutrition[today].splice(idx, 1);
   if (state.nutrition[today].length === 0) delete state.nutrition[today];
   saveState();
   renderNutrition();
   renderToday();
+  showUndoToast(`„${(removed.name || 'Eintrag').slice(0, 24)}" gelöscht`, () => {
+    if (!state.nutrition[today]) state.nutrition[today] = [];
+    state.nutrition[today].splice(Math.min(idx, state.nutrition[today].length), 0, removed);
+    saveState();
+    renderNutrition();
+    renderToday();
+  });
 }
 
 /* ----- Lebensmittel nachträglich bearbeiten ----- */
@@ -5036,6 +5225,9 @@ function openManual(editIdx = null) {
   document.getElementById('manF').value = it ? it.f : '';
   document.getElementById('manC').value = it ? it.c : '';
   document.getElementById('manMeal').value = it ? (it.meal || 'Abendessen') : 'Abendessen';
+  // Direkt-kcal nur vorbefüllen, wenn der Eintrag von der Makro-Rechnung abweicht (war also ein Direktwert)
+  const macroKcal = it ? Math.round((it.p||0)*4 + (it.f||0)*9 + (it.c||0)*4) : 0;
+  document.getElementById('manKcalDirect').value = (it && Math.abs(it.kcal - macroKcal) > 1) ? it.kcal : '';
   updateManualPreview();
   document.getElementById('manualModal').classList.add('active');
   setTimeout(() => document.getElementById('manName').focus(), 100);
@@ -5048,7 +5240,9 @@ function manualKcal() {
   const p = parseFloat(document.getElementById('manP').value) || 0;
   const f = parseFloat(document.getElementById('manF').value) || 0;
   const c = parseFloat(document.getElementById('manC').value) || 0;
-  return { p, f, c, kcal: Math.round(p*4 + f*9 + c*4) };
+  const direct = parseFloat(document.getElementById('manKcalDirect')?.value) || 0;
+  const kcal = direct > 0 ? Math.round(direct) : Math.round(p*4 + f*9 + c*4);
+  return { p, f, c, kcal };
 }
 function updateManualPreview() {
   document.getElementById('manKcalPreview').textContent = manualKcal().kcal + ' kcal';
@@ -5246,6 +5440,8 @@ function renderFoodList() {
   list.innerHTML = html;
 }
 function deleteCustomFood(barcode) {
+  const f = state.customFoods.find(x => x.barcode === barcode);
+  if (!confirm(`„${f ? f.name : 'Lebensmittel'}" wirklich löschen?`)) return;
   state.customFoods = state.customFoods.filter(f => f.barcode !== barcode);
   saveState();
   renderFoodList();
@@ -5837,7 +6033,52 @@ function setSessionNote(idx, val) {
   saveState();
 }
 
+function renderWeeklyReport() {
+  const el = document.getElementById('weeklyReport');
+  if (!el) return;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const dstr = d => { const x = new Date(now); x.setDate(x.getDate() - d); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; };
+  const inRange = (ds, from, to) => ds >= dstr(from) && ds <= dstr(to);
+  const wThis = state.workoutHistory.filter(w => inRange(w.date, 6, 0));
+  const wPrev = state.workoutHistory.filter(w => inRange(w.date, 13, 7));
+  if (!wThis.length && !wPrev.length) { el.innerHTML = ''; return; }
+  const vol = ws => ws.reduce((s, w) => s + (w.exercises || []).reduce((a, ex) => a + (ex.sets || []).reduce((b, st) => b + ((st.w || 0) * (st.r || 0)), 0), 0), 0);
+  const vT = Math.round(vol(wThis)), vP = Math.round(vol(wPrev));
+  const dv = vP > 0 ? Math.round((vT - vP) / vP * 100) : null;
+  // PRs der Woche: Übung, deren bestes e1RM der letzten 7 Tage = Alltime-Best ist
+  const best = {}, weekBest = {};
+  state.workoutHistory.forEach(w => (w.exercises || []).forEach(ex => (ex.sets || []).forEach(s => {
+    if (!s.w || !s.r) return;
+    const e = estimate1RM(s.w, s.r), k = ex.name || ex.id;
+    if (!best[k] || e > best[k]) best[k] = e;
+    if (inRange(w.date, 6, 0) && (!weekBest[k] || e > weekBest[k])) weekBest[k] = e;
+  })));
+  const prs = Object.keys(weekBest).filter(k => weekBest[k] >= best[k] - 0.01);
+  // kcal-Adhärenz: getrackte Tage der Woche, Ø-Abweichung vom Tagesziel
+  let tracked = 0, devSum = 0;
+  for (let i = 0; i <= 6; i++) {
+    const ds = dstr(i), items = state.nutrition[ds];
+    if (!items || !items.length) continue;
+    tracked++;
+    const kcal = items.reduce((s, x) => s + (x.kcal || 0), 0);
+    devSum += kcal - targetsForDate(ds).kcal;
+  }
+  const avgDev = tracked ? Math.round(devSum / tracked) : null;
+  // Gewichtstrend
+  const tr = weightTrend ? weightTrend(4) : null;
+  const rows = [];
+  rows.push(`<b style="color:var(--text)">${wThis.length}</b> Einheiten · Volumen <b style="color:var(--text)">${(vT/1000).toFixed(1)} t</b>${dv !== null ? ` (<span style="color:${dv >= 0 ? 'var(--success)' : 'var(--text-dim)'}">${dv >= 0 ? '+' : ''}${dv}%</span> zur Vorwoche)` : ''}`);
+  if (prs.length) rows.push(`<svg class="ic"><use href="#ic-trophy"/></svg> PR: <b style="color:var(--accent)">${prs.slice(0,3).map(escHtml).join(', ')}</b>${prs.length > 3 ? ` +${prs.length-3}` : ''}`);
+  if (tracked) rows.push(`Ernährung: ${tracked}/7 Tage getrackt · Ø ${avgDev >= 0 ? '+' : ''}${avgDev} kcal zum Ziel`);
+  if (tr && tr.enough) rows.push(`Gewicht: ${tr.perWeek >= 0 ? '+' : ''}${tr.perWeek.toFixed(2)} kg/Woche`);
+  el.innerHTML = `<div class="card">
+    <div class="card-header"><div class="card-title">Wochenrückblick</div><div class="card-meta">letzte 7 Tage</div></div>
+    <div style="font-size:14px; line-height:2; color:var(--text-dim);">${rows.map(r => `<div>${r}</div>`).join('')}</div>
+  </div>`;
+}
+
 function renderProgress() {
+  renderWeeklyReport();
   renderWorkoutCalendar();
   // Volume per week
   const byWeek = {};
@@ -6119,6 +6360,31 @@ function exportData() {
   showToast("✓ Export erstellt");
 }
 
+function exportCsv() {
+  // Trainings-Historie als CSV (Semikolon + BOM für Excel-DE); eine Zeile pro Satz.
+  const esc = v => { const s = String(v ?? ''); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const cols = [['w','Gewicht_kg'],['r','Wdh'],['time','Zeit_min'],['time_s','Zeit_s'],['dist_km','Distanz_km'],['dist_m','Distanz_m'],['watt','Watt'],['kcal','kcal'],['hr','Puls']];
+  const rows = [['Datum','Tag','Übung','Satz', ...cols.map(c => c[1]), 'Bewertung','WOD_Ergebnis','Unvollständig'].join(';')];
+  (state.workoutHistory || []).forEach(w => {
+    const meta = [w.date, w.dayName || w.dayCode || ''];
+    (w.exercises || []).forEach(ex => {
+      (ex.sets || []).forEach((s, i) => {
+        rows.push([...meta.map(esc), esc(ex.name || ex.id), i + 1,
+          ...cols.map(c => s[c[0]] ?? ''), w.rating ?? '', '', w.incomplete ? 'ja' : ''].join(';'));
+      });
+    });
+    if (w.result) rows.push([...meta.map(esc), '[WOD]', '', ...cols.map(() => ''), w.rating ?? '', esc(fmtWodResult(w.result)), ''].join(';'));
+  });
+  const blob = new Blob(['\uFEFF' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ironlog-training-${todayStr()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast("✓ CSV erstellt");
+}
+
 function importData(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -6163,26 +6429,9 @@ function resetAll() {
    SERVICE WORKER for offline
    ================================================================= */
 if ('serviceWorker' in navigator) {
-  const swCode = `
-    const CACHE = 'ironlog-v1';
-    self.addEventListener('install', e => self.skipWaiting());
-    self.addEventListener('activate', e => clients.claim());
-    self.addEventListener('fetch', e => {
-      e.respondWith(
-        caches.open(CACHE).then(cache =>
-          cache.match(e.request).then(r =>
-            r || fetch(e.request).then(resp => {
-              if (e.request.method === 'GET' && resp.ok) cache.put(e.request, resp.clone());
-              return resp;
-            }).catch(() => cache.match('/'))
-          )
-        )
-      );
-    });
-  `;
-  const blob = new Blob([swCode], { type: 'application/javascript' });
-  const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl).catch(e => console.log('SW reg fail', e));
+  // Registrierung aus echter Datei (relativ, damit GitHub-Pages-Unterpfade funktionieren).
+  // Hinweis: Blob-URLs werden von Chromium für Service Worker abgelehnt.
+  navigator.serviceWorker.register('sw.js').catch(e => console.log('SW reg fail', e));
 }
 
 /* =================================================================
