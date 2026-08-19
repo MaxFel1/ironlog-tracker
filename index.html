@@ -3109,6 +3109,44 @@ function scrollToActive() {
 }
 // Standard-Krafttag? (WODs sind vom Ausblenden ausgenommen)
 function isStandardDay(plan) { return !(plan && plan.format && plan.format !== 'standard'); }
+// Nächste unerledigte Einheit ab fromIdx (zyklisch); fromIdx selbst zählt mit, wenn unerledigt. -1 = keine offen.
+function nextOpenUnitIdx(units, plan, fromIdx) {
+  const n = units.length;
+  if (!n) return -1;
+  for (let k = 0; k < n; k++) {
+    const j = ((fromIdx + k) % n + n) % n;
+    if (!unitDone(units[j], plan)) return j;
+  }
+  return -1;
+}
+// Anker des globalen Timers: die Einheit der laufenden Pause (timerExId),
+// bzw. – wenn diese gerade fertig wurde – die nächste offene danach (zyklisch).
+// Fällt auf die erste offene Einheit zurück, wenn kein Timer läuft.
+function timerAnchorIdx(units, plan) {
+  // timerExId ist genau dann gesetzt, wenn eine Pause aktiv ist (stopTimer nullt es) –
+  // robuster als timerInterval, das innerhalb von startTimer erst nach dem Repositionieren entsteht.
+  if (timerExId) {
+    const tIdx = units.findIndex(u => u.items.some(e => e.id === timerExId));
+    if (tIdx >= 0) return unitDone(units[tIdx], plan) ? nextOpenUnitIdx(units, plan, tIdx + 1) : tIdx;
+  }
+  return nextOpenUnitIdx(units, plan, 0);
+}
+// Timer-Element live verschieben. Ohne Argument: an die Anker-Einheit der laufenden
+// Pause; mit anchorExId: gezielt vor die Einheit dieser Übung (z.B. beim Aufklappen).
+function repositionGlobalTimer(anchorExId) {
+  const gt = document.getElementById('globalTimer');
+  const list = document.getElementById('exerciseList');
+  if (!gt || !list) return;
+  const { plan, units } = currentUnits();
+  if (!units.length || !isStandardDay(plan)) return;
+  let idx = -1;
+  if (anchorExId) idx = units.findIndex(u => u.items.some(e => e.id === anchorExId));
+  if (idx === -1) idx = timerAnchorIdx(units, plan);
+  if (idx === -1) { list.appendChild(gt); return; }
+  const wrap = list.querySelector(`.exercise[data-exid="${units[idx].items[0].id}"]`);
+  if (wrap) list.insertBefore(gt, wrap);
+  else list.appendChild(gt);
+}
 // Globaler Pausen-Timer als DOM-Element (wird vor die aktuelle Übung gesetzt)
 function makeGlobalTimerEl() {
   const div = document.createElement('div');
@@ -3195,10 +3233,12 @@ function renderTraining() {
   // so existiert es auch beim allerersten Satz, wenn activeWorkout gerade erst erstellt wird.
   // Bei WODs taktet stattdessen die Stoppuhr oben.
   const showTimer = isStandardDay(plan);
-  const firstUnfinishedIdx = units.findIndex(u => !unitDone(u, plan));
+  // Timer-Position: folgt der Einheit der laufenden Pause (auch bei übersprungenen Übungen),
+  // ohne Timer: erste unerledigte Einheit.
+  const timerIdx = showTimer ? timerAnchorIdx(units, plan) : -1;
 
   units.forEach((unit, idx) => {
-    if (showTimer && idx === firstUnfinishedIdx) list.appendChild(makeGlobalTimerEl());
+    if (showTimer && idx === timerIdx) list.appendChild(makeGlobalTimerEl());
     if (unit.items.length < 2) {
       // Einzelübung (wie gehabt)
       const ex = unit.items[0];
@@ -3274,8 +3314,8 @@ function renderTraining() {
     }
   });
 
-  // Falls alle Übungen erledigt sind: Timer (läuft evtl. noch von der letzten Pause) ans Ende
-  if (showTimer && firstUnfinishedIdx === -1) list.appendChild(makeGlobalTimerEl());
+  // Falls keine Einheit mehr offen ist: Timer (läuft evtl. noch von der letzten Pause) ans Ende
+  if (showTimer && timerIdx === -1) list.appendChild(makeGlobalTimerEl());
 
   // Übungen starten immer eingeklappt — erst beim Antippen öffnen.
 
@@ -3290,7 +3330,13 @@ function toggleExercise(exId) {
   const el = document.querySelector(`.exercise[data-exid="${exId}"]`);
   if (!el) return;
   if (openExercises.has(exId)) { openExercises.delete(exId); el.classList.remove('open'); }
-  else { openExercises.add(exId); el.classList.add('open'); }
+  else {
+    openExercises.add(exId);
+    el.classList.add('open');
+    // Läuft eine Pause, wandert der Timer zur aufgeklappten Übung mit (nur Position;
+    // Pause, Countdown und Label bleiben unverändert).
+    if (timerExId) repositionGlobalTimer(exId);
+  }
 }
 
 function ensureActiveWorkout() {
@@ -3380,8 +3426,11 @@ function toggleSet(exId, setIdx, rest) {
     // damit die Einheit kompakt wird (bzw. bei Korrektur wieder aufklappt).
     if (nowDone) {
       unitExIds(exId).forEach(id => openExercises.delete(id)); // erledigte einklappen
-      const nextId = firstUnfinishedUnitId();
-      if (nextId) openExercises.add(nextId);                   // nächste Übung in den Fokus
+      // Nächste Übung in den Fokus – zyklisch AB der gerade abgeschlossenen,
+      // synchron zur Timer-Position (nicht die global erste unerledigte).
+      const { plan: fPlan, units: fUnits, unit: fUnit } = findUnit(exId);
+      const j = fUnit ? nextOpenUnitIdx(fUnits, fPlan, fUnits.indexOf(fUnit) + 1) : -1;
+      if (j !== -1) openExercises.add(fUnits[j].items[0].id);
     } else {
       openExercises.add(exId);                                 // Korrektur: aufgeklappt lassen
     }
@@ -3407,6 +3456,7 @@ function startTimer(exId, seconds, label) {
   gt.style.display = 'block';
   timerExId = exId;
   timerTotal = seconds;
+  repositionGlobalTimer(); // Timer folgt der gerade bearbeiteten Übung (auch wenn andere übersprungen wurden)
   // Label: "Pause läuft · <Übungsname>" (Kontext der gerade abgeschlossenen Übung)
   const exName = (state.activeWorkout?.exercises.find(e => e.id === exId) || {}).name;
   timerLabelText = (label || 'Pause läuft') + (exName ? ' · ' + exName : '');
@@ -4013,7 +4063,17 @@ function armKbAutoHide() {
   const sec = state.settings.kbAutoHideSec;
   if (!sec || sec <= 0 || !state.activeWorkout || !kbInTrainingInput()) return;
   kbHideTimer = setTimeout(() => {
-    if (kbInTrainingInput()) document.activeElement.blur();
+    if (kbInTrainingInput()) {
+      document.activeElement.blur();
+      // Nach dem Schließen der Tastatur den Pausen-Timer nach oben holen.
+      // Kleine Verzögerung, weil der Viewport nach dem Tastatur-Schließen erst resized.
+      setTimeout(() => {
+        const gt = document.getElementById('globalTimer');
+        if (gt && gt.style.display !== 'none' && gt.scrollIntoView) {
+          gt.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 350);
+    }
   }, sec * 1000);
 }
 document.addEventListener('focusin', armKbAutoHide);
