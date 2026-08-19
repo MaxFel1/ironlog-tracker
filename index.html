@@ -297,7 +297,7 @@ main { padding: 20px; }
 .exercise.done-collapsed { opacity: .6; border-color: var(--success); }
 .exercise.done-collapsed.open { opacity: 1; }
 .exercise.done-collapsed .exercise-target { color: var(--success); }
-.exercise, #globalTimer { scroll-margin-top: 16px; }
+.exercise, #globalTimer { scroll-margin-top: calc(var(--hdr-h, 90px) + 12px); }
 
 /* Supersatz-Block */
 .exercise.superset { border-color: var(--accent); }
@@ -2804,6 +2804,7 @@ function renderConsistency() {
 function applyTextScale() {
   const sc = state.settings.textScale || 1;
   document.body.style.zoom = sc === 1 ? '' : sc;
+  if (typeof measureHeader === 'function') setTimeout(measureHeader, 50);
 }
 function updateTextScale() {
   state.settings.textScale = parseFloat(document.getElementById('setTextScale').value) || 1;
@@ -4079,6 +4080,16 @@ function armKbAutoHide() {
 document.addEventListener('focusin', armKbAutoHide);
 document.addEventListener('input', armKbAutoHide);
 document.addEventListener('focusout', () => clearTimeout(kbHideTimer));
+
+/* Sticky-Header-Höhe messen → Scroll-Ziele landen UNTER dem Header, nicht dahinter.
+   (Höhe variiert mit Textgröße, daher zur Laufzeit statt fest im CSS.) */
+function measureHeader() {
+  const h = document.querySelector('header');
+  const px = (h && h.offsetHeight) ? h.offsetHeight : 90;
+  document.documentElement.style.setProperty('--hdr-h', px + 'px');
+}
+window.addEventListener('resize', measureHeader);
+measureHeader();
 
 function updateKbAutoHide() {
   const v = parseInt(document.getElementById('setKbHide').value, 10);
